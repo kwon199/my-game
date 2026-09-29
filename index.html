@@ -107,6 +107,9 @@
   .slip-total b { font-size: 22px; font-weight: normal; color: var(--green); font-variant-numeric: tabular-nums; }
   .comment { font-size: 15px; margin: 8px 0 2px; }
   .unlock { margin: 8px 0 0; padding: 7px; border: 3px solid var(--line); background: #f2c230; color: #1a1a2e; font-size: 14px; }
+  #gaugePill.hard { background: rgba(160, 20, 20, .92); animation: pulse .5s steps(2) infinite; }
+  @keyframes pulse { 50% { background: rgba(230, 60, 40, .95); } }
+  .slip td.minus { color: var(--red); }
 </style>
 </head>
 <body>
@@ -118,6 +121,7 @@
     <div class="hud-right">
       <button id="muteBtn" class="pill">♪ ON</button>
       <div class="pill playing-only">⏱ <span id="time">0.0</span>s <span id="power"></span></div>
+      <div class="pill playing-only" id="gaugePill"><span id="gauge"></span></div>
     </div>
   </div>
 
@@ -129,8 +133,10 @@
       <div class="howto">
         <b>이동</b> ← → 키 · 휴대폰은 화면 왼쪽/오른쪽 터치<br>
         <b>무기</b> 📎 클립 자동 발사 (PC는 스페이스로 속사)<br>
-        <b>업무</b>는 피하거나 격파! <b>점심밥</b>은 먹으면 점수 (연속 콤보)<br>
-        <b>커피</b>를 먹으면 6초간 3연발 · 최고점수로 새 회사 해제
+        <b>업무</b>는 피하거나 격파! <b>커피</b>는 6초간 3연발<br>
+        <b>점심밥</b>을 먹으면 든든해져서 격파 점수 2배 (식대는 월급에서 공제)<br>
+        너무 많이 먹으면 <b>하드모드</b> — 상사가 쫓아와 붙잡아요! ←→ 연타로 뿌리치기<br>
+        최고점수를 올려 새 회사를 해제하세요
       </div>
       <button id="startBtn" class="pbtn">출근하기 ▶</button>
       <p class="muted">최고 기록 <span id="bestAll">0</span>점</p>
@@ -525,8 +531,8 @@ function bgWall(g, w, h) {
 }
 
 // 상사
-function drawBoss(g, kind, x, ft, talking, t) {
-  const R = rect(g), top = ft - 25;
+function drawBossBust(g, kind, x, top, talking, t) {
+  const R = rect(g);
   const suit = { trade: '#5b5646', fashion: '#222222', wall: '#6f9bd6' }[kind];
   R(x - 6, top + 9, 12, 8, '#1a1a2e'); R(x - 5, top + 10, 10, 7, suit);
   if (kind === 'trade') { R(x - 1, top + 10, 2, 1, '#f4f4f4'); R(x - 1, top + 11, 2, 4, '#7a1f1f'); }
@@ -548,7 +554,9 @@ function drawBoss(g, kind, x, ft, talking, t) {
   }
   const lip = kind === 'fashion' ? '#d0325c' : '#6b1d1d';
   if (talking && (t * 8 | 0) % 2) R(x - 1, top + 7, 3, 2, lip); else R(x - 1, top + 7, 3, 1, lip);
-  // 책상
+}
+function drawDesk(g, kind, x, ft, t) {
+  const R = rect(g);
   if (kind === 'trade') {
     R(x - 15, ft - 12, 30, 2, '#8a5a34'); R(x - 14, ft - 10, 28, 10, '#5a3a1f'); R(x - 13, ft - 9, 26, 1, '#6b4526');
     R(x - 4, ft - 8, 9, 3, '#e2b43c'); R(x - 3, ft - 7, 7, 1, '#8a6a12');
@@ -565,11 +573,33 @@ function drawBoss(g, kind, x, ft, talking, t) {
   }
 }
 
+function drawBoss(g, kind, x, ft, talking, t, away = false) {
+  if (away) { const R = rect(g); R(x - 5, ft - 21, 10, 10, '#1a1a2e'); R(x - 4, ft - 20, 8, 9, '#4a4a55'); }
+  else drawBossBust(g, kind, x, ft - 25, talking, t);
+  drawDesk(g, kind, x, ft, t);
+}
+// 하드모드에서 뛰어오는 상사 (발끝 = x, y)
+function drawBossRunner(g, kind, x, y, face, frame, t, reach) {
+  const R = rect(g), top = y - 25;
+  const pants = { trade: '#4a463a', fashion: '#111111', wall: '#2a2f3d' }[kind];
+  const suit = { trade: '#5b5646', fashion: '#222222', wall: '#6f9bd6' }[kind];
+  if (frame % 2) {
+    R(x - 4, y - 8, 3, 4, pants); R(x - 6, y - 4, 3, 3, pants); R(x - 7, y - 1, 4, 1, '#111');
+    R(x + 1, y - 8, 3, 4, pants); R(x + 3, y - 4, 3, 4, pants); R(x + 3, y - 1, 4, 1, '#111');
+  } else {
+    R(x - 3, y - 8, 3, 7, pants); R(x, y - 8, 3, 7, pants); R(x - 4, y - 1, 4, 1, '#111'); R(x, y - 1, 4, 1, '#111');
+  }
+  drawBossBust(g, kind, x, top, true, t);
+  if (reach) { R(face > 0 ? x + 5 : x - 10, top + 11, 5, 2, suit); R(face > 0 ? x + 10 : x - 12, top + 11, 2, 2, '#e9b98f'); }
+  else R(face > 0 ? x + 5 : x - 7, top + 10 + (frame % 2), 2, 5, suit);
+}
+
 // ================= 맵 정의 =================
 const MAPS = [
   {
     id: 'trade', name: '대박무역(주)', desc: '꼰대 상사 · 쥐꼬리 월급', unlock: 0, diff: 1.0,
-    rate: 300, cur: 'KRW', bg: bgTrade,
+    rate: 300, cur: 'KRW', meal: 8000, coffeeCost: 4500, bg: bgTrade,
+    hard: { warn: '밥 먹었으면 일해야지!', grab: '팔뚝 잡힘!', giveup: '헉헉… 다음엔 잡는다!' },
     names: { mail: '긴급 메일', phone: '부장님 전화', cal: '갑작스런 회의' },
     special: { spr: 'beer', name: '강제 회식' },
     quotes: ['라떼는 말이야~', '이거 오늘까지 되지?', '주말에 뭐 해?', '회식 빠지면 안 돼~', '요즘 애들은 말이야…', '내가 신입 땐 말이야!'],
@@ -581,8 +611,9 @@ const MAPS = [
     },
   },
   {
-    id: 'fashion', name: '메종 드 모드', desc: '트렌드 전쟁 · 패션회사', unlock: 5000, diff: 1.15,
-    rate: 600, cur: 'KRW', bg: bgFashion,
+    id: 'fashion', name: '메종 드 모드', desc: '트렌드 전쟁 · 패션회사', unlock: 4000, diff: 1.15,
+    rate: 600, cur: 'KRW', meal: 12000, coffeeCost: 6500, bg: bgFashion,
+    hard: { warn: '잠깐! 피팅 모델 좀 서 봐!', grab: '줄자에 칭칭!', giveup: '피팅 모델 어디 갔어?!' },
     names: { mail: '시안 수정 메일', phone: '클라이언트 전화', cal: '긴급 품평회' },
     special: { spr: 'dress', name: '샘플 재작업' },
     quotes: ['이 컬러 아니잖아!', '샘플 다시!', '핏이 죽었어, 핏이!', '쇼까지 3일 남았어!', '트렌드를 읽어야지~', '이거 작년 거잖아?'],
@@ -594,8 +625,9 @@ const MAPS = [
     },
   },
   {
-    id: 'wall', name: '월스트리트 캐피털', desc: '뉴욕 증권가 · 억대 연봉?', unlock: 15000, diff: 1.3,
-    rate: 1.2, cur: 'USD', bg: bgWall,
+    id: 'wall', name: '월스트리트 캐피털', desc: '뉴욕 증권가 · 억대 연봉?', unlock: 12000, diff: 1.3,
+    rate: 1.2, cur: 'USD', meal: 25, coffeeCost: 7, bg: bgWall,
+    hard: { warn: '점심은 패배자나 먹는 거야!', grab: '전화선에 칭칭!', giveup: 'Time is money… 헉헉' },
     names: { mail: '리포트 요청', phone: '마진콜 전화', cal: '새벽 컨퍼런스콜' },
     special: { spr: 'chart', name: '폭락 차트' },
     quotes: ['SELL! SELL! SELL!', '전량 매수해!', '나스닥 폭락이다!', '보고서 5분 안에!', 'Time is money!', '숏 쳐! 숏!'],
@@ -659,6 +691,11 @@ const A = {
       case 'deny': this.tone(160, t, .18, 'square', .2, this.sfx, 90); break;
       case 'coin': this.arp([88, 93], .07, .15, 'square', .2); break;
       case 'unlock': this.arp([60, 64, 67, 72, 67, 72, 76], .08, .14, 'square', .25); break;
+      case 'warn': for (let i = 0; i < 4; i++) this.tone(i % 2 ? 660 : 880, t + i * .14, .13, 'square', .2); break;
+      case 'grab': this.tone(220, t, .25, 'sawtooth', .3, this.sfx, 70); this.hiss(t, .15, .25, 1200); break;
+      case 'mash': this.tone(420 + Math.random() * 200, t, .04, 'square', .1); break;
+      case 'escape': this.arp([72, 79, 84], .05, .1, 'square', .25); break;
+      case 'giveup': this.arp([67, 64, 60], .08, .12, 'triangle', .4); break;
       case 'over':
         this.hiss(t, .4, .4, 800);
         [[72, 0, .16], [67, .18, .16], [64, .36, .16], [60, .54, .6]].forEach(([n, d, len]) => this.tone(mtof(n), t + d, len, 'square', .28));
@@ -729,7 +766,8 @@ function resize() {
 let state = 'menu';
 let player, drops, bullets, particles, floaters, types;
 let elapsed, spawnTimer, fireTimer, powerTime, combo, comboTimer, shake, flash, level;
-let killPts, foodPts, kills, foods, hitBy, dieT, animT = 0, clock = 0;
+let killPts, kills, meals, coffees, grabs, fullness, fedTime, hitBy, dieT, animT = 0, clock = 0;
+let chase = { phase: 'idle' };
 let boss = { timer: 3, talk: 0, quote: '' };
 const keys = { left: false, right: false, fire: false };
 const touch = { left: false, right: false };
@@ -740,9 +778,9 @@ function buildTypes() {
     { id: 'phone', kind: 'work', spr: SPR.phone, name: map.names.phone, hp: 1, pts: 50, w: 24 },
     { id: 'cal', kind: 'work', spr: SPR.cal, name: map.names.cal, hp: 2, pts: 120, w: 14 },
     { id: 'sp', kind: 'work', spr: SPR[map.special.spr], name: map.special.name, hp: 2, pts: 150, w: 8 },
-    { id: 'bento', kind: 'food', spr: SPR.bento, name: '도시락', pts: 300, w: 4 },
-    { id: 'ramen', kind: 'food', spr: SPR.ramen, name: '컵라면', pts: 200, w: 6 },
-    { id: 'onigiri', kind: 'food', spr: SPR.onigiri, name: '삼각김밥', pts: 100, w: 9 },
+    { id: 'bento', kind: 'food', spr: SPR.bento, name: '도시락', fill: 2, fed: 6, w: 4 },
+    { id: 'ramen', kind: 'food', spr: SPR.ramen, name: '컵라면', fill: 2, fed: 4, w: 6 },
+    { id: 'onigiri', kind: 'food', spr: SPR.onigiri, name: '삼각김밥', fill: 1, fed: 3, w: 9 },
     { id: 'coffee', kind: 'coffee', spr: SPR.coffee, name: '아아', pts: 50, w: 3 },
   ];
 }
@@ -753,10 +791,11 @@ function reset() {
   drops = []; bullets = []; particles = []; floaters = [];
   elapsed = 0; spawnTimer = .6; fireTimer = 0; powerTime = 0; level = 0;
   combo = 0; comboTimer = 0; shake = 0; flash = 0;
-  killPts = 0; foodPts = 0; kills = 0; foods = 0; hitBy = null; dieT = 0;
+  killPts = 0; kills = 0; meals = 0; coffees = 0; grabs = 0; fullness = 0; fedTime = 0; hitBy = null; dieT = 0;
+  chase = { phase: 'idle', x: 0, face: -1, t: 0, hp: 0 };
   boss = { timer: 4, talk: 0, quote: '' };
 }
-const score = () => Math.floor(elapsed * 10) + killPts + foodPts;
+const score = () => Math.floor(elapsed * 10) + killPts;
 
 function spawn(forceType) {
   let t = forceType;
@@ -798,7 +837,7 @@ function update(dt) {
   // 상사 잔소리
   boss.timer -= dt;
   boss.talk = Math.max(0, boss.talk - dt);
-  if (boss.timer <= 0 && state !== 'over' && state !== 'dying') {
+  if (boss.timer <= 0 && state !== 'over' && state !== 'dying' && chase.phase === 'idle') {
     boss.quote = map.quotes[Math.random() * map.quotes.length | 0];
     boss.talk = 2.2;
     boss.timer = state === 'play' ? Math.max(3.5, 7 - elapsed * .03) : 5;
@@ -818,24 +857,27 @@ function update(dt) {
   if (state !== 'play') return;
 
   elapsed += dt;
-  A.tempo = 1 + Math.min(elapsed, 120) / 240;
+  A.tempo = (1 + Math.min(elapsed, 120) / 240) * (chase.phase === 'idle' ? 1 : 1.12);
   if (Math.floor(elapsed / 30) > level) {
     level = Math.floor(elapsed / 30);
     floatText(LW / 2, LH * .4, `업무량 증가! Lv.${level + 1}`, '#ffd76a', 1.6);
     A.play('level');
   }
   powerTime = Math.max(0, powerTime - dt);
+  fedTime = Math.max(0, fedTime - dt);
+  if (chase.phase === 'idle') fullness = Math.max(0, fullness - dt / 8);
   comboTimer -= dt;
   if (comboTimer <= 0) combo = 0;
 
   const dir = (keys.right || touch.right ? 1 : 0) - (keys.left || touch.left ? 1 : 0);
   player.moving = dir !== 0;
   if (dir) player.face = dir;
-  player.x += dir * LW * (.75 + elapsed * .006) * dt;
+  player.x += dir * LW * (.75 + elapsed * .006) * (chase.phase === 'grab' ? .3 : 1) * dt;
   player.x = Math.max(7, Math.min(LW - 7, player.x));
+  updateChase(dt);
 
   fireTimer -= dt;
-  if (fireTimer <= 0) { fire(); fireTimer = keys.fire ? .13 : .26; }
+  if (fireTimer <= 0) { fire(); fireTimer = (keys.fire ? .13 : .26) * (fedTime > 0 ? .8 : 1); }
 
   spawnTimer -= dt;
   if (spawnTimer <= 0) { spawn(); spawnTimer = Math.max(.14, (.75 - elapsed * .018) / map.diff); }
@@ -855,9 +897,10 @@ function update(dt) {
       if (Math.abs(d.x - b.x) < r && Math.abs(d.y - b.y) < r) {
         b.dead = true; d.hp--; d.flash = .1;
         if (d.hp <= 0) {
-          d.dead = true; kills++; killPts += d.pts;
+          const pts = d.pts * (fedTime > 0 ? 2 : 1);
+          d.dead = true; kills++; killPts += pts;
           burst(d.x, d.y, ['#ffffff', '#cfd6e0', '#ff4d5e'], 14);
-          floatText(d.x, d.y, `+${d.pts}`, '#ff6b6b');
+          floatText(d.x, d.y, `+${pts}`, fedTime > 0 ? '#7dff9a' : '#ff6b6b');
           A.play('kill');
         } else {
           burst(d.x, d.y, ['#ffd76a'], 5, 40);
@@ -878,23 +921,71 @@ function update(dt) {
     if (d.kind === 'work') return die(d);
     d.dead = true;
     if (d.kind === 'coffee') {
-      powerTime = 6; foodPts += d.pts;
+      powerTime = 6; coffees++;
       floatText(d.x, d.y, '3연발!', '#ffb020');
       burst(d.x, d.y, ['#ffb020', '#fff3b0'], 12);
       A.play('coffee');
     } else {
-      combo++; comboTimer = 3;
-      const mult = Math.min(combo, 5), pts = d.pts * mult;
-      foods++; foodPts += pts;
-      floatText(d.x, d.y, mult > 1 ? `+${pts} x${mult}` : `+${pts}`, '#7dff9a');
+      meals++;
+      fedTime = Math.min(10, fedTime + d.fed);
+      if (chase.phase === 'idle') fullness += d.fill;
+      floatText(d.x, d.y, '든든! 격파 x2', '#7dff9a');
       burst(d.x, d.y, ['#7dff9a', '#fff3b0'], 12);
-      A.play('eat', (mult - 1) * 2);
+      A.play('eat', Math.min(meals, 6));
+      if (fullness >= 5 && chase.phase === 'idle') startChase();
     }
   }
 
   drops = drops.filter(d => !d.dead && d.y < LH + d.h);
   bullets = bullets.filter(b => !b.dead && b.y > -10 && b.x > -10 && b.x < LW + 10);
 }
+
+// ================= 하드모드: 너무 많이 먹으면 상사가 쫓아온다 =================
+function startChase() {
+  chase = { phase: 'warn', x: LW - 20, face: -1, t: 1.1, hp: 0 };
+  boss.quote = map.hard.warn; boss.talk = 1.6;
+  floatText(LW / 2, LH * .35, 'HARD MODE!', '#ff4d5e', 1.8);
+  A.play('warn');
+}
+function updateChase(dt) {
+  const c = chase, deskX = LW - 20;
+  if (c.phase === 'idle') return;
+  c.t -= dt;
+  if (c.phase === 'warn') {
+    if (c.t <= 0) { c.phase = 'run'; c.t = 9; }
+  } else if (c.phase === 'run') {
+    const dx = player.x - c.x;
+    c.face = dx > 0 ? 1 : -1;
+    c.x += c.face * LW * (.36 + elapsed * .002) * map.diff * dt;
+    if (Math.random() < dt * 8) particles.push({ x: c.x - c.face * 4, y: LH - 4, vx: -c.face * 10, vy: -8, life: .3, c: '#cfc8b0', sz: 1 });
+    if (Math.abs(dx) < 9) {
+      c.phase = 'grab'; c.t = 3.5; c.hp = 7; grabs++; fullness = 0;
+      shake = 6; A.play('grab');
+      floatText(player.x, LH - 40, map.hard.grab, '#ff4d5e', 1.2);
+    } else if (c.t <= 0) {
+      c.phase = 'return'; fullness = 0;
+      boss.quote = map.hard.giveup; boss.talk = 1.8;
+      A.play('giveup');
+    }
+  } else if (c.phase === 'grab') {
+    c.x = player.x - c.face * 11;
+    if (c.hp <= 0 || c.t <= 0) {
+      c.phase = 'return';
+      if (c.hp <= 0) { floatText(player.x, LH - 40, '뿌리쳤다!', '#7dff9a', 1.2); A.play('escape'); }
+    }
+  } else if (c.phase === 'return') {
+    const dx = deskX - c.x;
+    c.face = dx > 0 ? 1 : -1;
+    c.x += c.face * LW * .3 * dt;
+    if (Math.abs(dx) < 2) c.phase = 'idle';
+  }
+}
+function mash() {
+  if (state !== 'play' || chase.phase !== 'grab') return;
+  chase.hp--; shake = Math.max(shake, 3);
+  A.play('mash');
+}
+const bossAway = () => chase.phase === 'run' || chase.phase === 'grab' || chase.phase === 'return';
 
 function die(d) {
   hitBy = d;
@@ -966,7 +1057,7 @@ function render() {
   // 배경 레이어 (저해상도)
   bgG.drawImage(bgCache, 0, 0);
   drawAmbient(bgG, t);
-  drawBoss(bgG, map.id, LW - 20, layout.ft, boss.talk > 0, t);
+  drawBoss(bgG, map.id, LW - 20, layout.ft, boss.talk > 0, t, bossAway());
   ctx.drawImage(loBg, 0, 0, LW * S, LH * S);
 
   // 배경 글자 (고해상도)
@@ -1000,6 +1091,10 @@ function render() {
   for (const p of particles) { g.globalAlpha = Math.min(1, p.life * 2); R(p.x, p.y, p.sz, p.sz, p.c); }
   g.globalAlpha = 1;
 
+  if (bossAway()) {
+    const bx = Math.round(chase.x), by = LH - 4, grab = chase.phase === 'grab';
+    drawBossRunner(g, map.id, bx, by, chase.face, grab ? (t * 10 | 0) % 2 : (animT * 10 | 0) % 2, t, grab);
+  }
   if (player) {
     const side = player.face > 0 ? 'R' : 'L';
     const px = Math.round(player.x), py = Math.round(player.y);
@@ -1014,8 +1109,21 @@ function render() {
       g.drawImage(RUN[side][f], px - 13, py - 28);
     }
   }
+  if (chase.phase === 'grab' && player && state === 'play') {
+    const px = Math.round(player.x), py = Math.round(player.y);
+    if (map.id === 'fashion') {
+      for (const yy of [py - 15, py - 10]) { R(px - 5, yy, 11, 2, '#f2c230'); for (let i = 0; i < 11; i += 2) R(px - 5 + i, yy, 1, 1, '#1a1a2e'); }
+    } else if (map.id === 'wall') {
+      for (const yy of [py - 14, py - 9]) for (let i = 0; i < 11; i++) R(px - 5 + i, yy + (i % 2), 1, 1, '#111');
+      for (let i = 0; i < 8; i++) R(px - chase.face * (5 + i), py - 18 + (i % 2) + (i >> 1), 1, 1, '#111');
+    }
+    R(px - 8, py - 34, 16, 3, '#1a1a2e'); R(px - 7, py - 33, Math.max(0, Math.round(14 * chase.hp / 7)), 1, '#ff4d5e');
+  }
   ctx.drawImage(loFg, 0, 0, LW * S, LH * S);
   ctx.restore();
+  if (state === 'play' && chase.phase !== 'idle') {
+    ctx.fillStyle = `rgba(255,40,40,${.07 + .05 * Math.sin(t * 10)})`; ctx.fillRect(0, 0, W, H);
+  }
 
   // 말풍선 / 떠오르는 점수 / 효과
   if (boss.talk > 0) {
@@ -1023,11 +1131,12 @@ function render() {
     ctx.font = `${size}px ${FONT}`;
     const tw = ctx.measureText(boss.quote).width, pad = 8;
     const bw = tw + pad * 2, bh = size + pad * 1.6;
-    const bx = Math.min(W - bw - 6, Math.max(6, (LW - 20) * S - bw / 2 - 20));
-    const by = (layout.ft - 27) * S - bh - 10;
+    const ax = bossAway() ? chase.x : LW - 20, ay = bossAway() ? LH - 4 : layout.ft;
+    const bx = Math.min(W - bw - 6, Math.max(6, ax * S - bw / 2 - 20));
+    const by = (ay - 27) * S - bh - 10;
     ctx.fillStyle = '#1a1a2e'; ctx.fillRect(bx - 3, by - 3, bw + 6, bh + 6);
     ctx.fillStyle = '#ffffff'; ctx.fillRect(bx, by, bw, bh);
-    const tx = (LW - 20) * S;
+    const tx = Math.min(W - 12, Math.max(12, ax * S));
     ctx.fillStyle = '#1a1a2e'; ctx.fillRect(tx - 6, by + bh, 12, 6);
     ctx.fillStyle = '#ffffff'; ctx.fillRect(tx - 3, by + bh, 6, 4);
     ctx.fillStyle = '#1a1a2e'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1038,6 +1147,7 @@ function render() {
     text(f.text, f.x * S, f.y * S, Math.round(S * 4.5 * f.size), f.color);
   }
   ctx.globalAlpha = 1;
+  if (state === 'play' && chase.phase === 'grab') text('←→ 좌우 연타로 뿌리치기!', W / 2, H * .55, Math.round(S * 5), '#ffffff');
   if (flash > 0) { ctx.fillStyle = `rgba(255,255,255,${flash * .6})`; ctx.fillRect(0, 0, W, H); }
 }
 
@@ -1048,7 +1158,10 @@ function updateHud() {
   if (state !== 'play') return;
   setText('score', score().toLocaleString());
   setText('time', elapsed.toFixed(1));
-  setText('power', powerTime > 0 ? `☕${powerTime.toFixed(1)}` : combo > 1 ? `🍱x${Math.min(combo, 5)}` : '');
+  setText('power', [powerTime > 0 ? `☕${powerTime.toFixed(1)}` : '', fedTime > 0 ? `🍚x2 ${fedTime.toFixed(1)}` : ''].join(' '));
+  const hard = chase.phase !== 'idle', full = Math.min(5, Math.floor(fullness));
+  setText('gauge', hard ? '🔥 HARD MODE' : '배부름 ' + '■'.repeat(full) + '□'.repeat(5 - full));
+  $('gaugePill').classList.toggle('hard', hard);
 }
 function refreshMute() { $('muteBtn').textContent = save.muted ? '♪ OFF' : '♪ ON'; }
 
@@ -1064,7 +1177,7 @@ function loop(now) {
 }
 
 // ================= 메뉴 / 맵 선택 =================
-const money = v => map.cur === 'USD' ? '$' + Math.round(v).toLocaleString('en-US') : Math.round(v).toLocaleString('ko-KR') + '원';
+const money = v => (v < 0 ? '−' : '') + (map.cur === 'USD' ? '$' + Math.round(Math.abs(v)).toLocaleString('en-US') : Math.round(Math.abs(v)).toLocaleString('ko-KR') + '원');
 function buildMapCards() {
   const box = $('maps');
   box.innerHTML = '';
@@ -1149,29 +1262,30 @@ function showSlip() {
   $('hitMsg').textContent = `「${hitBy.name}」에 맞았습니다…`;
   $('slipTitle').textContent = `${new Date().getMonth() + 1}월 급여명세서`;
   $('slipMap').textContent = map.name;
+  const mealCost = meals * map.meal + coffees * map.coffeeCost;
   const rows = [
     ['기본급', `근무 ${elapsed.toFixed(1)}초`, money(timeP * map.rate)],
-    ['성과급', `업무 격파 ${kills}건`, money(killPts * map.rate)],
-    ['식대', `점심 ${foods}끼 · 커피`, money(foodPts * map.rate)],
-    ['야근수당', '포괄임금제', null],
+    ['성과급', `업무 격파 ${kills}건 (든든 보너스 포함)`, money(killPts * map.rate)],
+    ['식대 공제', `구내식당 ${meals}끼 · 커피 ${coffees}잔`, money(-mealCost), 'minus'],
+    ['야근수당', '포괄임금제', `${money(0)} (미지급)`, 'minus'],
   ];
   const tbl = $('slipRows');
   tbl.innerHTML = '';
-  for (const [a, b, c] of rows) {
+  for (const [a, b, c, cls] of rows) {
     const tr = tbl.insertRow();
     const td1 = tr.insertCell(); td1.textContent = a;
     const sm = document.createElement('small'); sm.textContent = b; td1.append(sm);
-    const td2 = tr.insertCell(); td2.className = 'amt' + (c === null ? ' none' : '');
-    td2.textContent = c === null ? `${money(0)} (미지급)` : c;
+    const td2 = tr.insertCell(); td2.className = 'amt' + (cls ? ' ' + cls : '');
+    td2.textContent = c;
   }
 
-  const net = pts * map.rate;
+  const net = pts * map.rate - mealCost;
   const krw = map.cur === 'USD' ? net * 1350 : net;
   const tiers = [[1e6, '알바비보다 적어요… 🥲'], [2e6, '쥐꼬리 월급 인증 🐭'], [3.5e6, '그럭저럭 대리급 월급 ☕'], [6e6, '과장님 소리 듣겠어요 👔'], [1e7, '연봉 협상 대성공! 💼'], [Infinity, '당신이 바로 월가의 늑대 🐺']];
-  $('comment').textContent = tiers.find(([lim]) => krw < lim)[1];
+  $('comment').textContent = net <= 0 ? '밥값이 월급보다 많이 나왔어요… 🍚' : tiers.find(([lim]) => krw < lim)[1];
 
   const next = MAPS.find(m => m.unlock > after);
-  let line = `총 ${pts.toLocaleString()}점`;
+  let line = `총 ${pts.toLocaleString()}점` + (grabs ? ` · 붙잡힌 횟수 ${grabs}회` : '');
   line += pts > prevMapBest ? ' · 🎉 최고 기록 경신!' : ` · 이 회사 최고 ${prevMapBest.toLocaleString()}점`;
   if (next) line += ` · 「${next.name}」까지 ${(next.unlock - after).toLocaleString()}점`;
   $('scoreLine').textContent = line;
@@ -1205,6 +1319,7 @@ window.addEventListener('keydown', e => {
   if (k === ' ') { keys.fire = true; e.preventDefault(); }
   if (k === 'Enter') e.preventDefault();
   if (e.repeat) return;
+  if (state === 'play' && (k === 'ArrowLeft' || k === 'ArrowRight')) mash();
   if (state === 'menu') {
     if (k === 'Enter' || k === ' ') startGame();
     if (k === 'ArrowLeft' || k === 'ArrowRight') {
@@ -1226,6 +1341,7 @@ window.addEventListener('blur', () => { keys.left = keys.right = keys.fire = fal
 function updateTouches(e) {
   if (state !== 'play') return;
   e.preventDefault();
+  if (e.type === 'touchstart') for (let i = 0; i < e.changedTouches.length; i++) mash();
   const r = canvas.getBoundingClientRect();
   touch.left = touch.right = false;
   for (const t of e.touches) {
