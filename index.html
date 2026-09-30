@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>업무 폭탄 피하기</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css">
 <style>
   :root {
@@ -71,8 +72,8 @@
   }
   .pop { animation: pop .4s steps(5) both; }
   @keyframes pop { from { transform: scale(.5); opacity: 0; } to { transform: none; opacity: 1; } }
-  .logo { font-family: Galmuri14, Galmuri11, monospace; font-size: 32px; line-height: 1.15; color: var(--red); text-shadow: 3px 3px 0 var(--line); margin: 4px 0 6px; }
-  .screen-title { font-family: Galmuri14, Galmuri11, monospace; font-size: 22px; margin: 2px 0 12px; }
+  .logo { font-family: Galmuri11, monospace; font-size: 32px; line-height: 1.15; color: var(--red); text-shadow: 3px 3px 0 var(--line); margin: 4px 0 6px; }
+  .screen-title { font-family: Galmuri11, monospace; font-size: 22px; margin: 2px 0 12px; }
   .sub { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
   .muted { color: var(--muted); font-size: 13px; margin: 6px 0; }
 
@@ -151,7 +152,7 @@
   .note { font-size: 11px; color: var(--muted); margin: 8px 0 0; }
 
   /* 점수판 */
-  h1.over { font-family: Galmuri14, Galmuri11, monospace; margin: 2px 0 4px; font-size: 38px; color: var(--red); text-shadow: 3px 3px 0 var(--line); font-weight: normal; }
+  h1.over { font-family: Galmuri11, monospace; margin: 2px 0 4px; font-size: 38px; color: var(--red); text-shadow: 3px 3px 0 var(--line); font-weight: normal; }
   .rankline { font-size: 17px; margin: 6px 0 2px; color: #d4a017; }
   .slip { border: 3px solid var(--line); background: var(--paper2); margin: 10px 0 6px; text-align: left; }
   .slip-h { display: flex; justify-content: space-between; gap: 8px; padding: 7px 10px; background: var(--line); color: #fff8e6; font-size: 13px; }
@@ -211,8 +212,7 @@
   .perk .nm { font-size: 14px; margin-top: 6px; word-break: keep-all; }
   .perk .lv { font-size: 11px; color: var(--muted); margin-top: 6px; }
   .char.locked { cursor: not-allowed; }
-  .char.locked canvas { filter: grayscale(1) brightness(.35); }
-  .char.locked .nm, .char.locked .stat { opacity: .5; }
+  .char.locked canvas { filter: brightness(0); opacity: .75; }
   .char .lock { font-size: 11px; color: var(--red); margin-top: 4px; }
   .titles { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
   .tchip { font-family: inherit; font-size: 12px; padding: 6px 8px; border: 2px solid var(--line); background: var(--paper2); color: inherit; cursor: pointer; }
@@ -246,6 +246,10 @@
   .notes .warn { color: var(--red); }
   .chk { display: flex; align-items: center; gap: 8px; justify-content: center; font-size: 13px; margin-top: 12px; cursor: pointer; }
   .chk input { width: 18px; height: 18px; accent-color: #f2c230; }
+  .parcel { cursor: pointer; text-align: center; padding: 2px 0 4px; -webkit-tap-highlight-color: transparent; }
+  .parcel canvas { width: 240px; max-width: 100%; aspect-ratio: 80 / 64; height: auto; image-rendering: pixelated; }
+  .pc-cap { font-size: 15px; margin-top: 2px; }
+  .parcel.opened { cursor: default; }
 </style>
 </head>
 <body>
@@ -283,7 +287,7 @@
         <button id="goId" class="pbtn alt">✏️ 사원증 수정</button>
       </div>
       <p class="muted">최고 기록 <span id="bestAll">0</span>점</p>
-      <p class="ver">v2.0.1<button id="openNotice">📢 패치노트</button></p>
+      <p class="ver">v2.0.2<button id="openNotice">📢 패치노트</button></p>
     </div>
   </div>
 
@@ -474,7 +478,10 @@
       <p class="rc-desc" id="edText"></p>
       <p class="big-rank" id="edRank"></p>
       <div class="section">
-        <button class="gift" id="edGift">🎁 엔딩 보상 — 터치해서 열기</button>
+        <div class="parcel" id="edGift">
+          <canvas id="parcelCv" width="80" height="64"></canvas>
+          <div class="pc-cap" id="parcelCap"></div>
+        </div>
         <div id="edRewards" class="hidden"></div>
       </div>
       <div class="section">
@@ -604,6 +611,10 @@ const CHARS = [
     look: { suit: '#8e97aa', suit2: '#6b7385', pants: '#5d6579', pants2: '#474e60', hair: '#3a2a1a', tie: null, lanyard: true },
   },
   {
+    id: 'newbie_f', name: '신입사원 (여)', icon: '🌱', desc: '밝은 에너지의 멀티플레이어', speed: 1.1, fire: .28, power: 1, stats: [4, 3, 1],
+    look: { suit: '#8e97aa', suit2: '#6b7385', skirt: '#5d6579', pants: '#3a3a4a', pants2: '#2e2e3c', hair: '#3a2a1a', tie: null, lanyard: true, female: true, hs: 'pony' },
+  },
+  {
     id: 'daeri', name: '대리', icon: '💼', desc: '밸런스형 실무 에이스', speed: 1.0, fire: .24, power: 1, stats: [4, 3, 1],
     unlock: CH1_ENDS, hint: '1장 엔딩을 아무거나 1개 보면 해금',
     look: { suit: '#2e3f73', suit2: '#1e2a4f', pants: '#27366a', pants2: '#1b2447', hair: '#2b2118', tie: '#d83a3a' },
@@ -627,6 +638,16 @@ const CHARS = [
     id: 'choi', name: '최사장', icon: '🤝', desc: '점심밥 든든 효과 2배 지속', speed: .9, fire: .24, power: 1, stats: [3, 3, 1],
     unlock: ['E7'], hint: '1장 「거래처 스카우트」 엔딩',
     look: { suit: '#4a2f5e', suit2: '#352144', pants: '#2b2b2b', pants2: '#1c1c1c', hair: '#c9c9d1', tie: '#e2b43c', mustache: true },
+  },
+  {
+    id: 'hr', name: '인사팀 과장', icon: '📋', desc: '방어막 1개를 들고 출근', speed: .9, fire: .2, power: 1, stats: [3, 4, 1],
+    unlock: ['E1', 'E2', 'E5', 'E8'], hint: '1장 배드 엔딩(광탈·야근의 늪·표절·영원한 인턴) 중 하나',
+    look: { suit: '#4a4a5a', suit2: '#383845', skirt: '#383845', pants: '#3a3a4a', pants2: '#2e2e3c', hair: '#1a1a2e', tie: null, glasses: true, female: true, hs: 'bob' },
+  },
+  {
+    id: 'designer', name: '디자인 실장', icon: '🎨', desc: '연차(무적) 시간이 2초 더 길어요', speed: 1.0, fire: .24, power: 1, stats: [4, 3, 1],
+    unlock: ['P3', 'P4'], hint: '2장 「조용한 런칭 연기」 또는 「번아웃 휴직」 엔딩',
+    look: { suit: '#2b2b2b', suit2: '#1c1c1c', skirt: '#e04fa0', pants: '#2b2b2b', pants2: '#1c1c1c', hair: '#e04fa0', tie: null, female: true, hs: 'bob' },
   },
   {
     id: 'startup', name: '스타트업 대표', icon: '🚀', desc: '후드티의 기동력 (가장 빠름)', speed: 1.35, fire: .22, power: 1, stats: [5, 4, 1],
@@ -659,6 +680,7 @@ function drawRunner(g, frame, dead, L) {
   const [ax, ay, aw, ah] = [[-4, -14, 2, 5], [-6, -14, 2, 4], [-4, -14, 2, 5], [-1, -14, 2, 4]][frame];
   P(ax, ay + b, aw, ah, L.suit2); P(ax, ay + ah + b, 2, 1, SKIN);
   P(-3, -15 + b, 7, 7 - b, L.suit);
+  if (L.skirt) P(-4, -9 + b, 9, 3, L.skirt);
   P(1, -15 + b, 2, 2, '#f4f4f4');
   if (L.tie) { P(2, -14 + b, 1, 4, L.tie); if (frame !== 0) P(3, -14 + b, 2, 1, L.tie); }
   if (L.lanyard) { P(1, -15 + b, 1, 3, '#2f6fed'); P(0, -12 + b, 3, 3, '#f4f4f4'); P(1, -11 + b, 1, 1, '#2f6fed'); }
@@ -666,14 +688,21 @@ function drawRunner(g, frame, dead, L) {
   if (L.bald) { P(-3, -23 + b, 3, 1, L.hair); P(-4, -22 + b, 3, 4, L.hair); }
   else { P(-3, -23 + b, 7, 2, L.hair); P(-4, -22 + b, 3, 4, L.hair); }
   if (L.headband) { P(-4, -21 + b, 8, 1, '#d83a3a'); P(0, -21 + b, 1, 1, '#f4f4f4'); }
+  if (L.female) {
+    P(0, -22 + b, 3, 1, L.hair);
+    if (L.hs === 'pony') { P(-7, -22 + b + (frame % 2), 3, 5, L.hair); P(-5, -21 + b, 1, 2, '#e04fa0'); }
+    if (L.hs === 'bob') { P(-4, -18 + b, 3, 3, L.hair); P(3, -22 + b, 1, 4, L.hair); }
+    if (L.hs === 'long') { P(-5, -20 + b, 3, 8, L.hair); }
+  }
   P(-1, -19 + b, 1, 2, '#d49a6a');
   if (dead) {
     for (const [x, y] of [[1, -20], [3, -20], [2, -19], [1, -18], [3, -18]]) P(x, y + b, 1, 1, '#1a1a2e');
     P(2, -17 + b, 2, 1, '#6b1d1d');
   } else {
     P(2, -19 + b, 1, 1, '#1a1a2e');
+    if (L.female) P(2, -20 + b, 2, 1, '#1a1a2e');
     if (L.glasses) { P(1, -20 + b, 4, 1, '#1a1a2e'); P(1, -19 + b, 1, 1, '#1a1a2e'); P(3, -19 + b, 2, 1, '#9fd8ff'); }
-    if (L.mustache) P(2, -17 + b, 3, 1, L.hair); else P(3, -17 + b, 1, 1, '#b5523b');
+    if (L.mustache) P(2, -17 + b, 3, 1, L.hair); else P(3, -17 + b, 1, 1, L.female ? '#d0325c' : '#b5523b');
   }
   if (frame === 1 || frame === 2) P(-6, -21 + b, 1, 2, '#8fd3ff');
   const s = [0, 2, 0, -2][frame];
@@ -1046,6 +1075,10 @@ const A = {
       }
       case 'boom': this.hiss(t, .7, .6, 150); this.tone(110, t, .6, 'sine', 1, this.sfx, 30); break;
       case 'coinp': this.tone(1320 + Math.random() * 200, t, .05, 'square', .08); break;
+      case 'tape':
+        for (let i = 0; i < 9; i++) this.hiss(t + i * .06, .05, .18 + Math.random() * .1, 1500 + Math.random() * 3500);
+        this.hiss(t + .56, .18, .35, 700);
+        break;
       case 'talk': this.tone(520 + Math.random() * 160, t, .03, 'square', .04); break;
       case 'over':
         [[72, 0, .16], [67, .18, .16], [64, .36, .16], [60, .54, .6]].forEach(([n, d, len]) => this.tone(mtof(n), t + d, len, 'square', .28));
@@ -1159,6 +1192,7 @@ function resize() {
   loBg.width = loFg.width = LW; loBg.height = loFg.height = LH;
   buildBg();
   sceneCache = {};
+  if (typeof textCache !== 'undefined') textCache.clear();
   if (player) { player.y = LH - 4; player.x = Math.min(player.x, LW - 8); }
 }
 
@@ -1560,7 +1594,7 @@ function update(dt) {
       burst(d.x, d.y, ['#ffb020', '#fff3b0'], 12);
       A.play('coffee');
     } else if (d.id === 'vacation') {
-      invTime = 3.5;
+      invTime = 3.5 + (char.id === 'designer' ? 2 : 0);
       floatText(d.x, d.y, '연차! 3초 무적', '#8fd3ff', 1.2);
       burst(d.x, d.y, ['#8fd3ff', '#fff3b0', '#ffffff'], 16);
       A.play('vacation');
@@ -1824,12 +1858,28 @@ function drawAmbient(g, t) {
   }
 }
 
+const textCache = new Map();
 function text(str, x, y, size, color, align = 'center', outline = '#1a1a2e') {
-  ctx.font = `${size}px ${FONT}`;
-  ctx.textAlign = align; ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(3, size / 4); ctx.strokeStyle = outline;
-  ctx.strokeText(str, x, y);
-  ctx.fillStyle = color; ctx.fillText(str, x, y);
+  const key = `${str}|${size}|${color}|${outline}`;
+  let c = textCache.get(key);
+  if (!c) {
+    const r = dpr || 1, lw = Math.max(3, size / 4);
+    ctx.font = `${size}px ${FONT}`;
+    const w = Math.ceil(ctx.measureText(str).width + lw * 2 + 4), h = Math.ceil(size * 1.5 + lw * 2);
+    c = document.createElement('canvas');
+    c.width = Math.ceil(w * r); c.height = Math.ceil(h * r);
+    const g = c.getContext('2d');
+    g.scale(r, r);
+    g.font = ctx.font; g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.lineJoin = 'round'; g.lineWidth = lw; g.strokeStyle = outline;
+    g.strokeText(str, lw + 2, h / 2);
+    g.fillStyle = color; g.fillText(str, lw + 2, h / 2);
+    c.w = w; c.h = h; c.pad = lw + 2;
+    if (textCache.size > 500) textCache.delete(textCache.keys().next().value);
+    textCache.set(key, c);
+  }
+  const dx = align === 'center' ? x - c.w / 2 : align === 'right' ? x - c.w + c.pad : x - c.pad;
+  ctx.drawImage(c, dx, y - c.h / 2, c.w, c.h);
 }
 function fitText(str, maxW, size) {
   ctx.font = `${size}px ${FONT}`;
@@ -1838,19 +1888,26 @@ function fitText(str, maxW, size) {
 }
 
 const TICKS = [['OVERTIME', '▲99.9'], ['SALARY', '▼12.3'], ['COFFEE', '▲8.8'], ['MEETING', '▲42.0'], ['WEEKEND', '▼88.8'], ['BONUS', '▼100'], ['STRESS', '▲77.7']];
+let tickerCache = null;
 function drawTicker(t) {
   const tk = layout.ticker, size = Math.round(tk.h * S * .72);
   ctx.save();
   ctx.beginPath(); ctx.rect(0, tk.y * S, W, tk.h * S); ctx.clip();
   ctx.font = `${size}px ${FONT}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-  const segs = TICKS.map(([n, v]) => [n + ' ', v + '   ', v[0] === '▲' ? '#3ddc84' : '#ff4d5e']);
-  const total = segs.reduce((s, [a, b]) => s + ctx.measureText(a + b).width, 0);
+  if (!tickerCache || tickerCache.size !== size) {
+    const segs = TICKS.map(([n, v]) => {
+      const a = n + ' ', b = v + '   ';
+      return { a, b, c: v[0] === '▲' ? '#3ddc84' : '#ff4d5e', wa: ctx.measureText(a).width, wb: ctx.measureText(b).width };
+    });
+    tickerCache = { size, segs, total: segs.reduce((sum, g) => sum + g.wa + g.wb, 0) };
+  }
+  const { segs, total } = tickerCache;
   let x = -((t * 30 * S) % total);
   const y = (tk.y + tk.h / 2) * S + 1;
   while (x < W) {
-    for (const [a, b, c] of segs) {
-      ctx.fillStyle = '#ffd76a'; ctx.fillText(a, x, y); x += ctx.measureText(a).width;
-      ctx.fillStyle = c; ctx.fillText(b, x, y); x += ctx.measureText(b).width;
+    for (const g of segs) {
+      ctx.fillStyle = '#ffd76a'; ctx.fillText(g.a, x, y); x += g.wa;
+      ctx.fillStyle = g.c; ctx.fillText(g.b, x, y); x += g.wb;
     }
   }
   ctx.restore();
@@ -2268,19 +2325,22 @@ function openIdCard() {
     const btn = document.createElement('button');
     btn.className = 'char' + (c === pendingChar ? ' sel' : '') + (open ? '' : ' locked');
     const cv = document.createElement('canvas'); cv.width = 26; cv.height = 30; drawCharPreview(cv, c);
-    const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = open ? `${c.icon} ${c.name}` : `🔒 ${c.name}`;
-    const ds = document.createElement('div'); ds.className = 'ds'; ds.textContent = c.desc;
+    const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = open ? `${c.icon} ${c.name}` : '🔒 ???';
+    const ds = document.createElement('div'); ds.className = 'ds'; ds.textContent = open ? c.desc : '정체불명의 직원…';
     btn.append(cv, nm, ds);
-    ['이동', '연사', '공격'].forEach((label, i) => {
-      const row = document.createElement('div'); row.className = 'stat';
-      const l = document.createElement('span'); l.textContent = label;
-      const bar = document.createElement('span'); bar.className = 'bar';
-      for (let j = 0; j < 5; j++) { const b = document.createElement('i'); if (j < c.stats[i]) b.className = 'on'; bar.append(b); }
-      row.append(l, bar); btn.append(row);
-    });
-    if (!open) { const lk = document.createElement('div'); lk.className = 'lock'; lk.textContent = `📖 ${c.hint}`; btn.append(lk); }
+    if (open) {
+      ['이동', '연사', '공격'].forEach((label, i) => {
+        const row = document.createElement('div'); row.className = 'stat';
+        const l = document.createElement('span'); l.textContent = label;
+        const bar = document.createElement('span'); bar.className = 'bar';
+        for (let j = 0; j < 5; j++) { const b = document.createElement('i'); if (j < c.stats[i]) b.className = 'on'; bar.append(b); }
+        row.append(l, bar); btn.append(row);
+      });
+    } else {
+      const lk = document.createElement('div'); lk.className = 'lock'; lk.textContent = `📖 해금: 스토리 ${c.hint}`; btn.append(lk);
+    }
     btn.addEventListener('click', () => {
-      if (!open) { A.play('deny'); $('nickErr').textContent = `🔒 ${c.name}: 스토리 모드 ${c.hint}`; return; }
+      if (!open) { A.play('deny'); $('nickErr').textContent = `🔒 아직 모르는 직원이에요. 스토리 ${c.hint}`; return; }
       A.play('click'); pendingChar = c;
       for (const el of box.children) el.classList.remove('sel');
       btn.classList.add('sel');
@@ -2380,6 +2440,7 @@ function startGame() {
   A.init();
   A.play('click');
   reset();
+  if (char.id === 'hr') perks.shield = 1;
   state = 'play';
   for (const s of SCREENS) $(s).classList.add('hidden');
   $('hud').classList.add('playing');
@@ -2909,14 +2970,20 @@ const MINI = {
 
   union: {
     title: '노조랑 열 올리기', icon: '✊', scene: 'work', song: () => MAPS[2].song,
-    desc: '강위원장의 말도 안 되는 주장에 논리로 맞서세요! ← → 를 번갈아 연타해서 줄다리기에서 이기면 승리! 억지 주장을 외칠 땐 더 세게 당겨요.',
-    controls: '← → 번갈아 연타 (휴대폰: 좌우 번갈아 터치)',
-    create: () => ({ dur: 20, m: 0, last: 0, surge: 0, surgeT: 2.5, shout: '', shoutT: 0, arg: '', argT: 0, ux: 0, px: 0 }),
+    desc: '← → 를 번갈아 연타해서 줄다리기에서 이기세요! 강위원장이 억지 주장을 외칠 땐 화면에 뜬 방향을 눌러 반박해야 크게 밀어낼 수 있어요. 같은 키만 누르면 오히려 밀리고, 마지막 5초엔 강위원장이 폭주해요!',
+    controls: '← → 번갈아 연타 + 억지 주장엔 표시된 방향으로 반박',
+    create: () => ({ dur: 20, m: 0, last: 0, surge: 0, surgeT: 2.2, need: 0, shout: '', shoutT: 0, arg: '', argT: 0, ux: 0, px: 0 }),
     update(m, dt) {
-      m.m -= (7 + m.t * .45) * dt;
-      if (m.surge > 0) { m.surge -= dt; m.m -= 24 * dt; }
+      const rage = m.t > 15 ? 1.5 : 1;
+      m.m -= (10 + m.t * .5) * rage * dt;
+      if (m.surge > 0) { m.surge -= dt; m.m -= 34 * dt; }
       m.surgeT -= dt;
-      if (m.surgeT <= 0) { m.surgeT = 3 + Math.random(); m.surge = 1.4; m.shout = pick(UNION_NONSENSE); m.shoutT = 2.2; A.play('boss'); shake = 4; }
+      if (m.surgeT <= 0) {
+        m.surgeT = Math.max(2.2, 3.8 - m.t * .08) + Math.random() * .6;
+        m.surge = 1.5; m.need = Math.random() < .5 ? -1 : 1;
+        m.shout = pick(UNION_NONSENSE); m.shoutT = 2;
+        A.play('boss'); shake = 4;
+      }
       m.shoutT -= dt; m.argT -= dt;
       if (m.m >= 100) return 'win';
       if (m.m <= -100) { m.reason = '목소리 큰 사람이 이겼다…'; return 'lose'; }
@@ -2926,9 +2993,14 @@ const MINI = {
       }
     },
     press(m, dir) {
-      if (dir === m.last) { m.m += .6; return; }
-      m.last = dir; m.m += 4.5; A.play('mash');
-      if (m.argT <= 0 && Math.random() < .2) { m.arg = pick(UNION_REBUT); m.argT = 1.5; }
+      if (m.surge > 0 && dir === m.need) {
+        m.surge = 0; m.m += 10; m.last = dir;
+        m.arg = '반박 성공! ' + pick(UNION_REBUT); m.argT = 1.3;
+        A.play('escape'); shake = 3;
+        return;
+      }
+      if (dir === m.last) { m.m -= 1.5; return; }
+      m.last = dir; m.m += 3.2; A.play('mash');
     },
     draw(m, g, t) {
       const R = rect(g), y = LH - 4, off = m.m / 100 * LW * .12;
@@ -2953,7 +3025,10 @@ const MINI = {
       ctx.fillStyle = '#ffffff'; ctx.fillRect(c - 1, y - 4, 3, h + 8);
       if (m.shoutT > 0) drawBubble(m.shout, m.ux, LH - 4 - 27);
       if (m.argT > 0) text(m.arg, Math.min(W - 80, m.px * S), (LH - 44) * S, 14, '#7dff9a');
-      if (m.t < 4 || (t * 3 | 0) % 2) text('← → 번갈아 연타!', W / 2, H * .38, 20, '#ffffff');
+      if (m.surge > 0) {
+        ctx.fillStyle = 'rgba(10,8,20,.7)'; ctx.fillRect(0, H * .44 - 30, W, 60);
+        text(m.need < 0 ? '◀◀ 왼쪽으로 반박!' : '오른쪽으로 반박! ▶▶', W / 2, H * .44, 26, (t * 8 | 0) % 2 ? '#ffd76a' : '#ffffff');
+      } else if (m.t < 4 || (t * 3 | 0) % 2) text('← → 번갈아 연타!', W / 2, H * .38, 20, '#ffffff');
     },
   },
 
@@ -3870,9 +3945,7 @@ function showEnding(id) {
     state = 'story';
     A.stopMusic();
     $('edNo').textContent = `${c.title} · ENDING #${e.no}${isNew ? ' · 🆕 새 엔딩!' : ''}`;
-    const gift = $('edGift');
-    gift.classList.remove('hidden', 'shake');
-    gift.textContent = isNew ? '🎁 엔딩 보상 도착! — 터치해서 열기' : '🎁 이 엔딩의 보상 확인하기';
+    resetParcel(isNew);
     $('edRewards').classList.add('hidden');
     $('edRewards').innerHTML = '';
     $('edIcon').textContent = e.icon;
@@ -3896,37 +3969,114 @@ function showEnding(id) {
 }
 
 let edReward = null;
+// 📦 택배 상자: 테이프를 뜯고 → 뚜껑이 열리고 → 보상 등장
+const parcel = { phase: 'idle', t: 0, raf: 0, last: 0 };
+function drawParcel(peel, open, t) {
+  const g = $('parcelCv').getContext('2d'), R = rect(g);
+  g.clearRect(0, 0, 80, 64);
+  const bob = parcel.phase === 'idle' ? Math.round(Math.sin(t * 5) * 1) : 0;
+  const jump = parcel.phase === 'open' && open < 1 ? -Math.round(Math.sin(open * Math.PI) * 3) : 0;
+  const oy = bob + jump;
+  g.globalAlpha = .25; R(14, 58, 52, 3, '#000'); g.globalAlpha = 1;
+  // 열리면 빛
+  if (open > .5) {
+    g.globalAlpha = Math.min(1, (open - .5) * 2) * (.35 + .15 * Math.sin(t * 6));
+    g.fillStyle = '#fff3b0';
+    for (let i = 0; i < 7; i++) {
+      const a = -Math.PI / 2 + (i - 3) * .32 + Math.sin(t * 1.5) * .05;
+      g.beginPath(); g.moveTo(40, 22 + oy); g.lineTo(40 + Math.cos(a - .07) * 60, 22 + oy + Math.sin(a - .07) * 60); g.lineTo(40 + Math.cos(a + .07) * 60, 22 + oy + Math.sin(a + .07) * 60); g.fill();
+    }
+    g.globalAlpha = 1;
+  }
+  // 몸통
+  R(13, 26 + oy, 54, 32, '#1a1a2e'); R(14, 27 + oy, 52, 30, '#c8904e');
+  R(14, 27 + oy, 52, 3, '#b27a3c'); R(61, 27 + oy, 5, 30, '#a8743a');
+  // 송장
+  R(19, 35 + oy, 24, 15, '#1a1a2e'); R(20, 36 + oy, 22, 13, '#f4f4f4');
+  R(22, 38 + oy, 14, 1, '#1a1a2e'); R(22, 41 + oy, 18, 1, '#6b7385'); R(22, 44 + oy, 12, 1, '#6b7385'); R(35, 45 + oy, 5, 3, '#d83a3a');
+  // 취급주의 화살표
+  for (const ax of [48, 54]) { R(ax, 39 + oy, 2, 7, '#6b4a2e'); R(ax - 1, 40 + oy, 4, 1, '#6b4a2e'); R(ax - 2, 41 + oy, 6, 1, '#6b4a2e'); }
+  if (open <= 0) {
+    // 닫힌 뚜껑 + 테이프
+    R(13, 19 + oy, 54, 8, '#1a1a2e'); R(14, 20 + oy, 52, 6, '#d9a364'); R(39, 20 + oy, 2, 6, '#b27a3c');
+    const len = 22, left = Math.round(len * (1 - peel)), top = 20 + (len - left);
+    if (left > 0) { R(36, top + oy, 8, left, '#e8d9a8'); R(37, top + oy, 2, left, '#fff6d8'); }
+    if (peel > 0) {
+      const n = Math.round(len * peel);
+      for (let i = 0; i < n; i++) R(36 + i * .8, top - 2 - i * .9 + oy, 8, 2, i % 3 ? '#e8d9a8' : '#fff6d8');
+    }
+  } else {
+    // 열린 상자: 안쪽 + 양옆으로 젖혀지는 날개
+    R(14, 20 + oy, 52, 7, '#5a3a1f');
+    const th = Math.min(1, open) * 2.4;
+    for (const side of [-1, 1]) {
+      const hx = side < 0 ? 14 : 66, ex = hx - side * 25 * Math.cos(th), ey = 20 - 25 * Math.sin(th) + oy;
+      g.fillStyle = '#1a1a2e';
+      g.beginPath(); g.moveTo(hx, 19 + oy); g.lineTo(hx, 27 + oy); g.lineTo(ex, ey + 7); g.lineTo(ex, ey - 1); g.fill();
+      g.fillStyle = '#d9a364';
+      g.beginPath(); g.moveTo(hx, 20 + oy); g.lineTo(hx, 26 + oy); g.lineTo(ex, ey + 6); g.lineTo(ex, ey); g.fill();
+    }
+    if (open >= 1) for (let i = 0; i < 6; i++) {
+      const a = t * 2 + i, sx = 40 + Math.cos(a) * (12 + i * 3), sy = 16 + oy - ((t * 18 + i * 9) % 26);
+      R(sx, sy, 1, 1, i % 2 ? '#ffd76a' : '#ffffff');
+    }
+  }
+}
+function parcelLoop(now) {
+  const dt = Math.min(.05, (now - (parcel.last || now)) / 1000);
+  parcel.last = now;
+  parcel.t += dt;
+  const pt = parcel.phaseT = (parcel.phaseT || 0) + dt;
+  let peel = 0, open = 0;
+  if (parcel.phase === 'peel') {
+    peel = Math.min(1, pt / .7);
+    if (pt >= .7) { parcel.phase = 'open'; parcel.phaseT = 0; A.play('stamp'); }
+  } else if (parcel.phase === 'open') {
+    peel = 1; open = Math.min(1, pt / .4);
+    if (pt >= .4 && !parcel.shown) { parcel.shown = true; showRewards(); }
+  }
+  drawParcel(peel, open, parcel.t);
+  if (!$('endingCard').classList.contains('hidden')) parcel.raf = requestAnimationFrame(parcelLoop);
+  else parcel.raf = 0;
+}
+function resetParcel(isNew) {
+  Object.assign(parcel, { phase: 'idle', t: 0, phaseT: 0, last: 0, shown: false });
+  $('edGift').classList.remove('opened');
+  $('parcelCap').textContent = isNew ? '📦 택배 도착! 테이프를 뜯어 보세요 (터치)' : '📦 이 엔딩의 보상 상자 (터치)';
+  if (!parcel.raf) parcel.raf = requestAnimationFrame(parcelLoop);
+}
 function openGift() {
-  const gift = $('edGift');
-  if (!edReward || gift.classList.contains('shake')) return;
-  gift.classList.add('shake');
-  A.play('stamp');
-  setTimeout(() => {
-    gift.classList.add('hidden');
-    const box = $('edRewards');
-    box.innerHTML = '';
-    const chars = edReward.newChars.length ? edReward.newChars : edReward.related;
-    for (const c of chars) {
-      const row = document.createElement('div');
-      row.className = 'reward';
-      const cv = document.createElement('canvas'); cv.width = 26; cv.height = 30; drawCharPreview(cv, c);
-      const tx = document.createElement('div');
-      tx.textContent = `${edReward.newChars.includes(c) ? '🔓 캐릭터 해금!' : '✔ 해금된 캐릭터'} ${c.icon} ${c.name}`;
-      const sm = document.createElement('small'); sm.textContent = `${c.desc} · 무한 모드 사원증에서 선택`;
-      tx.append(sm); row.append(cv, tx); box.append(row);
-    }
-    if (edReward.title) {
-      const row = document.createElement('div');
-      row.className = 'reward';
-      const ic = document.createElement('div'); ic.className = 'big'; ic.textContent = '🏷️';
-      const tx = document.createElement('div');
-      tx.textContent = `${edReward.isNew ? '새 칭호 획득!' : '획득한 칭호'} 「${edReward.title}」`;
-      const sm = document.createElement('small'); sm.textContent = '사원증 수정에서 장착하면 랭킹에 표시돼요';
-      tx.append(sm); row.append(ic, tx); box.append(row);
-    }
-    box.classList.remove('hidden');
-    A.play('unlock');
-  }, 520);
+  if (!edReward || parcel.phase !== 'idle') return;
+  parcel.phase = 'peel'; parcel.phaseT = 0;
+  $('edGift').classList.add('opened');
+  $('parcelCap').textContent = '찌지직…';
+  A.play('tape');
+}
+function showRewards() {
+  $('parcelCap').textContent = edReward.isNew ? '🎉 보상을 받았어요!' : '이 엔딩의 보상이에요';
+  const box = $('edRewards');
+  box.innerHTML = '';
+  const chars = edReward.newChars.length ? edReward.newChars : edReward.related;
+  for (const c of chars) {
+    const row = document.createElement('div');
+    row.className = 'reward';
+    const cv = document.createElement('canvas'); cv.width = 26; cv.height = 30; drawCharPreview(cv, c);
+    const tx = document.createElement('div');
+    tx.textContent = `${edReward.newChars.includes(c) ? '🔓 캐릭터 해금!' : '✔ 해금된 캐릭터'} ${c.icon} ${c.name}`;
+    const sm = document.createElement('small'); sm.textContent = `${c.desc} · 무한 모드 사원증에서 선택`;
+    tx.append(sm); row.append(cv, tx); box.append(row);
+  }
+  if (edReward.title) {
+    const row = document.createElement('div');
+    row.className = 'reward';
+    const ic = document.createElement('div'); ic.className = 'big'; ic.textContent = '🏷️';
+    const tx = document.createElement('div');
+    tx.textContent = `${edReward.isNew ? '새 칭호 획득!' : '획득한 칭호'} 「${edReward.title}」`;
+    const sm = document.createElement('small'); sm.textContent = '사원증 수정에서 장착하면 랭킹에 표시돼요';
+    tx.append(sm); row.append(ic, tx); box.append(row);
+  }
+  box.classList.remove('hidden');
+  A.play('unlock');
 }
 
 function renderStory() {
@@ -4096,15 +4246,29 @@ $('noticeOk').addEventListener('click', () => {
 $('openNotice').addEventListener('click', () => { A.play('click'); showNotice(true); });
 
 // ================= 시작 =================
-window.addEventListener('resize', resize);
-if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
+let resizeQueued = false;
+const queueResize = () => {
+  if (resizeQueued) return;
+  resizeQueued = true;
+  requestAnimationFrame(() => { resizeQueued = false; resize(); });
+};
+window.addEventListener('resize', queueResize);
+if (window.ResizeObserver) new ResizeObserver(queueResize).observe(canvas);
 resize();
 reset();
 buildMapCards();
 refreshMute();
 if (save.nick) openHome(); else openIdCard();
 showNotice(false);
-if (document.fonts) document.fonts.ready.then(() => { for (const k in hudCache) delete hudCache[k]; });
+// 버프 방울 미리 굽기 (게임 시작 직후 끊김 방지)
+for (const t of buildTypes()) if (t.kind !== 'work') bubble(Math.ceil(Math.max(t.spr.width, t.spr.height) / 2) + 3, t.kind === 'food' ? '#7dff9a' : '#ffd76a');
+// 픽셀 폰트가 다 받아지면 글자 캐시를 새로 만든다
+if (document.fonts) {
+  Promise.all([document.fonts.load(`12px ${FONT}`), document.fonts.ready]).then(() => {
+    for (const k in hudCache) delete hudCache[k];
+    textCache.clear(); tickerCache = null;
+  }).catch(() => {});
+}
 requestAnimationFrame(loop);
 })();
 </script>
