@@ -250,6 +250,53 @@
   .parcel canvas { width: 240px; max-width: 100%; aspect-ratio: 80 / 64; height: auto; image-rendering: pixelated; }
   .pc-cap { font-size: 15px; margin-top: 2px; }
   .parcel.opened { cursor: default; }
+  /* 페이지 넘김 */
+  .pg { display: none; }
+  .pg.on { display: block; animation: pgIn .18s steps(3); }
+  @keyframes pgIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+  .pnav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 2px; }
+  .pnav .pv, .pnav .nx { font-family: inherit; font-size: 16px; min-width: 48px; height: 38px; border: 3px solid var(--line); background: var(--paper2); color: inherit; cursor: pointer; box-shadow: 2px 2px 0 var(--line); }
+  .pnav .pv:disabled, .pnav .nx:disabled { opacity: .3; cursor: default; box-shadow: none; }
+  .plabel { flex: 1; text-align: center; font-size: 12px; color: var(--muted); }
+  .plabel i { display: inline-block; width: 7px; height: 7px; margin: 0 2px; background: rgba(128,128,128,.4); vertical-align: middle; }
+  .plabel i.on { background: #f2c230; }
+  .tabs-nav { justify-content: stretch; gap: 6px; margin: 0 0 10px; }
+  .ptab { flex: 1; min-width: 0; font-family: inherit; font-size: 12px; padding: 7px 2px; border: 3px solid var(--line); background: var(--paper2); color: inherit; cursor: pointer; }
+  .ptab.on { background: #f2c230; color: #1a1a2e; }
+  .map.big { flex-direction: column; text-align: center; padding: 10px; margin: 0; }
+  .map.big canvas { width: 100%; max-width: 300px; height: auto; aspect-ratio: 3 / 2; }
+  .map.big .nm { font-size: 18px; margin-top: 4px; }
+  .char { padding: 6px 5px; }
+  .char .ds { min-height: 0; }
+  .card .pbtn { margin-top: 8px; }
+  /* 휴대폰 한 화면에 들어가도록 여백 압축 */
+  .overlay { padding: 46px 10px 10px; }
+  .card { padding: 14px 13px; }
+  .card-head { margin: -14px -13px 10px; }
+  .screen-title { margin: 0 0 8px; }
+  .char canvas { width: 44px; height: 51px; }
+  .char .nm { font-size: 14px; margin: 1px 0; }
+  .char .ds { font-size: 10px; margin-bottom: 2px; }
+  .stat { margin-top: 1px; font-size: 10px; }
+  .chars { gap: 6px; }
+  .chap { padding: 7px 10px; margin: 6px 0; }
+  .chap .tt { font-size: 15px; margin: 1px 0; }
+  .chap .st { margin-top: 3px; }
+  .field input { padding: 8px; }
+  .parcel canvas { transition: width .25s steps(4); }
+  .parcel.small canvas { width: 130px; }
+  .reward { padding: 5px 8px; margin-top: 6px; font-size: 13px; }
+  .reward canvas { width: 36px; height: 42px; }
+  h1.over { font-size: 30px; margin: 0 0 2px; }
+  #hitMsg { margin: 2px 0; }
+  .rankline { margin: 2px 0; font-size: 15px; }
+  .slip { margin: 6px 0 4px; }
+  .slip-h { padding: 5px 10px; }
+  .slip td { padding: 3px 8px; }
+  .slip-total { padding: 6px 10px; }
+  .slip-total b { font-size: 20px; }
+  .comment { margin: 4px 0 0; font-size: 14px; }
+  #scoreLine { margin: 2px 0; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -295,14 +342,16 @@
   <div id="idcard" class="overlay hidden">
     <div class="card">
       <div class="screen-title">사원증 발급</div>
-      <label class="field">닉네임
-        <input id="nickInput" maxlength="8" placeholder="최대 8글자" autocomplete="off" spellcheck="false">
-      </label>
+      <div class="pager" id="idPager">
+        <div class="pg" data-title="닉네임 · 칭호">
+          <label class="field">닉네임
+            <input id="nickInput" maxlength="8" placeholder="최대 8글자" autocomplete="off" spellcheck="false">
+          </label>
+          <div class="sub-title">🏷️ 칭호 <span class="muted" id="titleCount"></span></div>
+          <div class="titles" id="titles"></div>
+        </div>
+      </div>
       <p class="err" id="nickErr"></p>
-      <div class="sub-title">🏷️ 칭호 <span class="muted" id="titleCount"></span></div>
-      <div class="titles" id="titles"></div>
-      <div class="sub-title">🧑‍💼 캐릭터 <span class="muted" id="charCount"></span></div>
-      <div class="chars" id="chars"></div>
       <button id="idOk" class="pbtn wide">발급 완료 ✔</button>
     </div>
   </div>
@@ -311,14 +360,7 @@
   <div id="mapsel" class="overlay hidden">
     <div class="card">
       <div class="screen-title">어느 회사로 출근할까요?</div>
-      <div id="maps"></div>
-      <div class="howto">
-        <b>이동</b> ← → (휴대폰은 화면 좌우 터치) · <b>📎 클립</b> 자동 발사, 스페이스로 속사<br>
-        <b>💣 업무폭탄</b>: 심지 달린 것! 30초마다 지그재그·급강하·분열·추적 유형이 추가돼요<br>
-        <b>✨ 버프</b>: 방울 속 — 점심밥 든든 · 커피 3연발 · 🏖️ 연차 무적 · 📋 결재도장<br>
-        <b>📈 진급 보너스</b>: 30초마다 강화 2개 중 하나 선택<br>
-        <b>👔 보스</b>: 오른쪽 위에 등장까지 남은 시간이 보여요. 이기면 🎁 보상 타임!
-      </div>
+      <div class="pager" id="mapPager"></div>
       <div class="btns">
         <button id="mapBack" class="pbtn alt">← 홈</button>
         <button id="startBtn" class="pbtn">출근하기 ▶</button>
@@ -331,7 +373,7 @@
     <div class="card">
       <div class="screen-title">🏆 명예의 전당</div>
       <div class="tabs" id="rankTabs"></div>
-      <ol class="rank-list" id="rankList"></ol>
+      <div class="pager" id="rankPager"></div>
       <p class="note" id="rankNote"></p>
       <button id="rankBack" class="pbtn alt wide">← 홈</button>
     </div>
@@ -343,16 +385,22 @@
       <h1 class="over">야근 확정!</h1>
       <p id="hitMsg" class="muted"></p>
       <p id="rankLine" class="rankline"></p>
-      <div class="slip">
-        <div class="slip-h"><span id="slipTitle"></span><span id="slipMap"></span></div>
-        <table id="slipRows"></table>
-        <div class="slip-total"><span>실수령액</span><b id="net">0</b></div>
+      <div class="pager" id="overPager" data-mode="tabs">
+        <div class="pg" data-title="📄 급여명세서">
+          <div class="slip">
+            <div class="slip-h"><span id="slipTitle"></span><span id="slipMap"></span></div>
+            <table id="slipRows"></table>
+            <div class="slip-total"><span>실수령액</span><b id="net">0</b></div>
+          </div>
+          <p id="comment" class="comment"></p>
+          <p id="scoreLine" class="muted"></p>
+          <p id="unlockMsg" class="unlock hidden"></p>
+        </div>
+        <div class="pg" data-title="🏆 랭킹 TOP 5">
+          <div class="sub-title" id="overRankTitle"></div>
+          <ol class="rank-list" id="overRank"></ol>
+        </div>
       </div>
-      <p id="comment" class="comment"></p>
-      <p id="scoreLine" class="muted"></p>
-      <p id="unlockMsg" class="unlock hidden"></p>
-      <div class="sub-title" id="overRankTitle"></div>
-      <ol class="rank-list" id="overRank"></ol>
       <div class="btns">
         <button id="retryBtn" class="pbtn">다시 하기</button>
         <button id="homeBtn" class="pbtn alt">홈으로</button>
@@ -364,7 +412,8 @@
   <div id="notice" class="overlay hidden">
     <div class="card">
       <div class="card-head">📢 업데이트 v2.0.1 · 밸런스 패치</div>
-      <div class="notes">
+      <div class="notes pager" id="noticePager">
+        <div class="pg" data-title="스토리 모드">
         <h3>📖 스토리 모드</h3>
         <ul>
           <li>🗺️ <b>스토리 흐름도</b>: 지나온 분기점부터 바로 다시 시작할 수 있어요</li>
@@ -372,6 +421,8 @@
           <li>📍 스테이지 진행 표시 + <b>다음 스테이지</b> 버튼으로 흐름이 한눈에</li>
           <li>🎁 <b>엔딩 보상 상자</b>: 터치하면 캐릭터 해금 · 칭호 획득</li>
         </ul>
+        </div>
+        <div class="pg" data-title="무한 모드">
         <h3>⚡ 무한 모드</h3>
         <ul>
           <li>👔 <b>맵별 보스</b> 회장님 · 총괄 디렉터 · 월가 CEO! 오른쪽 위에 등장까지 남은 시간이 보이고, 5초 전부터 경고해요</li>
@@ -381,6 +432,8 @@
           <li>📈 <b>진급 보너스</b>: 30초마다 강화 2개 중 하나 선택 (연사 · 관통 · 방어막 등)</li>
           <li>⚖️ 속도만 빨라지던 난이도를 완화하고, 패턴으로 어려워지게 바꿨어요</li>
         </ul>
+        </div>
+        <div class="pg" data-title="캐릭터 · 칭호">
         <h3>🧑‍💼 캐릭터 · 칭호</h3>
         <ul>
           <li>신입사원은 기본, <b>나머지 캐릭터는 스토리 엔딩으로 해금</b>돼요</li>
@@ -388,6 +441,7 @@
           <li>🏷️ <b>칭호</b>: 엔딩마다 획득, 사원증에서 장착하면 랭킹에 표시</li>
           <li class="warn">⚠ 해금 전 캐릭터를 쓰고 있었다면 신입사원으로 바뀌어요 (랭킹 기록은 그대로)</li>
         </ul>
+        </div>
       </div>
       <label class="chk"><input type="checkbox" id="noticeHide"> 이 버전 안내 다시 안 보기</label>
       <button id="noticeOk" class="pbtn wide">확인 ▶</button>
@@ -408,8 +462,8 @@
   <div id="storyHome" class="overlay hidden">
     <div class="card">
       <div class="screen-title">📖 스토리 모드</div>
-      <p class="sub">어떤 엔딩을 보느냐에 따라 다음 이야기가 달라져요!</p>
-      <div id="chapterList"></div>
+      <p class="muted">어떤 엔딩을 보느냐에 따라 다음 이야기가 달라져요!</p>
+      <div class="pager" id="chapterPager"></div>
       <button id="stBack" class="pbtn alt wide">← 홈</button>
     </div>
   </div>
@@ -419,13 +473,21 @@
       <div class="muted" id="chNo"></div>
       <div class="logo" style="font-size:28px" id="chTitle"></div>
       <p class="sub" id="chSub"></p>
-      <p class="rc-desc" id="chIntro"></p>
-      <div class="sub-title">🗺️ 스토리 흐름도 · 원하는 분기점부터 다시 시작</div>
-      <ol class="flow" id="flowList"></ol>
-      <div class="sub-title">📚 엔딩 도감 <span id="edTotal"></span></div>
-      <ul class="endings" id="endingList"></ul>
-      <button id="stCont" class="pbtn wide hidden">▶ 이어하기</button>
-      <button id="stNew" class="pbtn wide story">처음부터 시작 ▶</button>
+      <div class="pager" id="chPager" data-mode="tabs">
+        <div class="pg" data-title="📖 시작">
+          <p class="rc-desc" id="chIntro"></p>
+          <button id="stCont" class="pbtn wide hidden">▶ 이어하기</button>
+          <button id="stNew" class="pbtn wide story">처음부터 시작 ▶</button>
+        </div>
+        <div class="pg" data-title="🗺️ 흐름도">
+          <p class="muted">원하는 분기점부터 다시 시작할 수 있어요</p>
+          <ol class="flow" id="flowList"></ol>
+        </div>
+        <div class="pg" data-title="📚 엔딩 도감">
+          <p class="muted">모은 엔딩 <span id="edTotal"></span></p>
+          <ul class="endings" id="endingList"></ul>
+        </div>
+      </div>
       <button id="chBack" class="pbtn alt wide">← 챕터 목록</button>
     </div>
   </div>
@@ -473,26 +535,30 @@
   <div id="endingCard" class="overlay hidden">
     <div class="card">
       <div class="card-head" id="edNo"></div>
-      <div class="rc-icon" id="edIcon"></div>
-      <div class="screen-title" id="edTitle"></div>
-      <p class="rc-desc" id="edText"></p>
-      <p class="big-rank" id="edRank"></p>
-      <div class="section">
-        <div class="parcel" id="edGift">
-          <canvas id="parcelCv" width="80" height="64"></canvas>
-          <div class="pc-cap" id="parcelCap"></div>
+      <div class="pager" id="edPager">
+        <div class="pg" data-title="엔딩">
+          <div class="rc-icon" id="edIcon"></div>
+          <div class="screen-title" id="edTitle"></div>
+          <p class="rc-desc" id="edText"></p>
+          <p class="big-rank" id="edRank"></p>
+          <button class="pbtn wide" id="edToGift">🎁 보상 받으러 가기 ▶</button>
         </div>
-        <div id="edRewards" class="hidden"></div>
-      </div>
-      <div class="section">
-        <p class="muted" id="edCount"></p>
-        <p class="unlock hidden" id="edUnlock"></p>
-      </div>
-      <div class="section">
-        <button id="edFlow" class="pbtn wide">🗺️ 흐름도에서 다른 선택 해보기</button>
-        <div class="btns">
-          <button id="edRetry" class="pbtn story">처음부터</button>
-          <button id="edMenu" class="pbtn alt">스토리 메뉴</button>
+        <div class="pg" data-title="보상">
+          <div class="parcel" id="edGift">
+            <canvas id="parcelCv" width="80" height="64"></canvas>
+            <div class="pc-cap" id="parcelCap"></div>
+          </div>
+          <div id="edRewards" class="hidden"></div>
+          <button class="pbtn wide hidden" id="edToNext">다음 ▶</button>
+        </div>
+        <div class="pg" data-title="다음 이야기">
+          <p class="muted" id="edCount"></p>
+          <p class="unlock hidden" id="edUnlock"></p>
+          <button id="edFlow" class="pbtn wide">🗺️ 흐름도에서 다른 선택 해보기</button>
+          <div class="btns">
+            <button id="edRetry" class="pbtn story">처음부터</button>
+            <button id="edMenu" class="pbtn alt">스토리 메뉴</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1152,13 +1218,14 @@ async function submitScore(mapId, entry) {
     });
   } catch (e) {}
 }
-function renderRankList(ol, list, me, limit = 10) {
+function renderRankList(ol, list, me, limit = 10, offset = 0) {
   ol.innerHTML = '';
   if (!list.length) {
     const li = document.createElement('li'); li.className = 'empty'; li.textContent = '아직 기록이 없어요. 첫 번째 주인공이 되어 보세요!';
     ol.append(li); return;
   }
-  list.slice(0, limit).forEach((e, i) => {
+  list.slice(offset, offset + limit).forEach((e, j) => {
+    const i = j + offset;
     const li = document.createElement('li');
     if (i < 3) li.className = 'top' + (i + 1);
     if (me && (e.id ? e.id === me.id : e.n === me.n && e.s === me.s)) li.classList.add('me');
@@ -2269,6 +2336,62 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
+// ================= 페이지 넘김 (긴 화면은 스크롤 대신 여러 장으로) =================
+// root 안의 .pg 들을 한 장씩 보여준다. data-mode="tabs"면 위쪽 탭, 아니면 아래쪽 ◀ ▶
+function pager(root, start = 0, onChange = null) {
+  const pages = [...root.children].filter(el => el.classList.contains('pg'));
+  const tabs = root.dataset.mode === 'tabs';
+  let nav = [...root.children].find(el => el.classList.contains('pnav'));
+  if (!nav) {
+    nav = document.createElement('div');
+    nav.className = 'pnav' + (tabs ? ' tabs-nav' : '');
+    if (tabs) root.prepend(nav); else root.append(nav);
+  }
+  let i = 0;
+  const go = (n, sound) => {
+    i = clamp(0, pages.length - 1, n);
+    pages.forEach((pg, k) => pg.classList.toggle('on', k === i));
+    if (tabs) [...nav.children].forEach((b, k) => b.classList.toggle('on', k === i));
+    else {
+      nav.querySelector('.pv').disabled = i === 0;
+      nav.querySelector('.nx').disabled = i === pages.length - 1;
+      const t = pages[i] && pages[i].dataset.title;
+      nav.querySelector('.plabel').innerHTML = (t ? `${t}<br>` : '') + pages.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('');
+    }
+    nav.classList.toggle('hidden', pages.length < 2);
+    if (sound) A.play('click');
+    if (onChange) onChange(i);
+  };
+  nav.innerHTML = '';
+  if (tabs) {
+    pages.forEach((pg, k) => {
+      const b = document.createElement('button');
+      b.className = 'ptab';
+      b.textContent = pg.dataset.title || k + 1;
+      b.addEventListener('click', () => go(k, true));
+      nav.append(b);
+    });
+  } else {
+    nav.innerHTML = '<button class="pv" aria-label="이전 장">◀</button><span class="plabel"></span><button class="nx" aria-label="다음 장">▶</button>';
+    nav.querySelector('.pv').addEventListener('click', () => go(i - 1, true));
+    nav.querySelector('.nx').addEventListener('click', () => go(i + 1, true));
+  }
+  if (!root.swipeBound) {
+    root.swipeBound = true;
+    let sx = 0, sy = 0;
+    root.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+    root.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+      if (root.pager && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) root.pager.go(root.pager.i + (dx < 0 ? 1 : -1), true);
+    }, { passive: true });
+  }
+  root.pager = { go, get i() { return i; }, get n() { return pages.length; } };
+  go(start);
+  return root.pager;
+}
+const makePage = (title) => { const pg = document.createElement('div'); pg.className = 'pg'; if (title) pg.dataset.title = title; return pg; };
+const clearPages = root => { for (const el of [...root.children]) if (el.classList.contains('pg') && !el.dataset.keep) el.remove(); };
+
 // ================= 화면 전환 =================
 const SCREENS = ['perkCard', 'home', 'idcard', 'mapsel', 'rank', 'over', 'storyHome', 'chapterCard', 'dialog', 'roundCard', 'resultCard', 'endingCard'];
 function showScreen(id) {
@@ -2316,11 +2439,22 @@ function openIdCard() {
     });
     tbox.append(b);
   }
-  // 캐릭터
-  const box = $('chars');
-  box.innerHTML = '';
-  $('charCount').textContent = `${CHARS.filter(charUnlocked).length} / ${CHARS.length} 해금`;
-  for (const c of CHARS) {
+  // 캐릭터 (4명씩 한 장)
+  const root = $('idPager');
+  root.firstElementChild.dataset.keep = '1';
+  clearPages(root);
+  const nav = [...root.children].find(el => el.classList.contains('pnav'));
+  const allBtns = [];
+  const unlockedN = CHARS.filter(charUnlocked).length;
+  let box = null, selPage = 0;
+  CHARS.forEach((c, idx) => {
+    if (idx % 4 === 0) {
+      const pg = makePage(`캐릭터 ${unlockedN}/${CHARS.length} 해금`);
+      box = document.createElement('div'); box.className = 'chars';
+      pg.append(box);
+      root.insertBefore(pg, nav || null);
+    }
+    if (c === pendingChar) selPage = 1 + Math.floor(idx / 4);
     const open = charUnlocked(c);
     const btn = document.createElement('button');
     btn.className = 'char' + (c === pendingChar ? ' sel' : '') + (open ? '' : ' locked');
@@ -2342,20 +2476,23 @@ function openIdCard() {
     btn.addEventListener('click', () => {
       if (!open) { A.play('deny'); $('nickErr').textContent = `🔒 아직 모르는 직원이에요. 스토리 ${c.hint}`; return; }
       A.play('click'); pendingChar = c;
-      for (const el of box.children) el.classList.remove('sel');
+      for (const el of allBtns) el.classList.remove('sel');
       btn.classList.add('sel');
       char = c; player.face = 1;
+      $('nickErr').textContent = '';
     });
     box.append(btn);
-  }
+    allBtns.push(btn);
+  });
   char = pendingChar;
+  pager(root, save.nick ? selPage : 0);
   showScreen('idcard');
-  setTimeout(() => $('nickInput').focus(), 50);
+  if (!save.nick) setTimeout(() => $('nickInput').focus(), 50);
 }
 function confirmId() {
   const nick = $('nickInput').value.trim().replace(/\s+/g, ' ');
-  if (!nick) { $('nickErr').textContent = '닉네임을 적어 주세요!'; A.play('deny'); return; }
-  if ([...nick].length > 8) { $('nickErr').textContent = '닉네임은 8글자까지예요.'; A.play('deny'); return; }
+  if (!nick) { $('nickErr').textContent = '닉네임을 적어 주세요!'; A.play('deny'); $('idPager').pager.go(0); return; }
+  if ([...nick].length > 8) { $('nickErr').textContent = '닉네임은 8글자까지예요.'; A.play('deny'); $('idPager').pager.go(0); return; }
   save.nick = nick; save.char = pendingChar.id; save.title = pendingTitle; char = pendingChar; persist();
   A.play('coin');
   openHome();
@@ -2363,11 +2500,12 @@ function confirmId() {
 
 // 회사 선택
 function buildMapCards() {
-  const box = $('maps');
-  box.innerHTML = '';
+  const root = $('mapPager');
+  clearPages(root);
   for (const m of MAPS) {
+    const pg = makePage();
     const btn = document.createElement('button');
-    btn.className = 'map';
+    btn.className = 'map big';
     btn.dataset.id = m.id;
     const thumb = document.createElement('canvas');
     thumb.width = 120; thumb.height = 80;
@@ -2377,14 +2515,24 @@ function buildMapCards() {
     tg.drawImage(SPRITES.daeri.R[1], 30, 52);
     const info = document.createElement('div');
     info.innerHTML = `<div class="nm"></div><div class="ds"></div><div class="rt"></div>`;
-    info.querySelector('.ds').textContent = `${m.desc} · ${m.gimmick}`;
+    info.querySelector('.ds').textContent = `${m.desc} · ${m.gimmick} · 보스: ${m.boss.name}`;
     btn.append(thumb, info);
-    btn.addEventListener('click', () => selectMap(m));
-    box.append(btn);
+    btn.addEventListener('click', () => { if (isUnlocked(m)) tryStart(); else A.play('deny'); });
+    pg.append(btn);
+    root.append(pg);
   }
+  const how = makePage('게임 방법');
+  how.innerHTML = `<div class="sub-title">❓ 게임 방법</div><div class="howto">
+    <b>이동</b> ← → (휴대폰은 화면 좌우 터치) · <b>📎 클립</b> 자동 발사, 스페이스로 속사<br>
+    <b>💣 업무폭탄</b>: 심지 달린 것! 30초마다 지그재그·급강하·분열·추적 유형이 추가돼요<br>
+    <b>✨ 버프</b>: 방울 속 — 점심밥 든든 · 커피 3연발 · 🏖️ 연차 무적 · 📋 결재도장<br>
+    <b>📈 진급 보너스</b>: 30초마다 강화 2개 중 하나 선택<br>
+    <b>👔 보스</b>: 오른쪽 위에 등장까지 남은 시간이 보여요. 이기면 🎁 보상 타임!<br>
+    <b>🔥 하드모드</b>: 너무 많이 먹으면 상사가 쫓아와요. 잡히면 ← → 연타!</div>`;
+  root.append(how);
 }
 function refreshMapCards() {
-  for (const btn of $('maps').children) {
+  for (const btn of $('mapPager').querySelectorAll('.map')) {
     const m = mapById(btn.dataset.id), open = isUnlocked(m);
     btn.classList.toggle('locked', !open);
     btn.classList.toggle('sel', m === map);
@@ -2395,9 +2543,22 @@ function refreshMapCards() {
       : `최고점수 ${m.unlock.toLocaleString()}점 달성 시 해제`;
   }
 }
-function selectMap(m) {
+// 넘긴 장의 회사가 곧 선택된 회사
+function onMapPage(i) {
+  const m = MAPS[i], sb = $('startBtn');
+  if (m && isUnlocked(m) && m !== map) selectMap(m, true);
+  const locked = m && !isUnlocked(m);
+  sb.textContent = locked ? '🔒 잠긴 회사' : '출근하기 ▶';
+  sb.classList.toggle('alt', !!locked);
+}
+function tryStart() {
+  const i = $('mapPager').pager ? $('mapPager').pager.i : 0;
+  if (i < MAPS.length && !isUnlocked(MAPS[i])) { A.play('deny'); return; }
+  startGame();
+}
+function selectMap(m, quiet) {
   if (!isUnlocked(m)) { A.play('deny'); return; }
-  A.play('click');
+  if (!quiet) A.play('click');
   if (m === map) return;
   map = m; save.sel = m.id; persist();
   types = buildTypes();
@@ -2408,6 +2569,7 @@ function selectMap(m) {
 function openMapSelect() {
   toMenuState();
   refreshMapCards();
+  pager($('mapPager'), MAPS.indexOf(map), onMapPage);
   showScreen('mapsel');
 }
 
@@ -2426,11 +2588,23 @@ async function openRank(tab = map.id) {
     tabs.append(b);
   }
   if (!$('rank').classList.contains('hidden')) {} else showScreen('rank');
-  const id = ++rankReq;
-  $('rankList').innerHTML = '<li class="empty">불러오는 중…</li>';
+  const id = ++rankReq, root = $('rankPager');
+  clearPages(root);
+  const loading = makePage(); loading.innerHTML = '<ol class="rank-list"><li class="empty">불러오는 중…</li></ol>';
+  root.append(loading); pager(root);
   const res = await fetchRanking(tab);
   if (id !== rankReq) return;
-  renderRankList($('rankList'), res.list, { n: save.nick, s: save.best[tab] || -1 }, 10);
+  clearPages(root);
+  const shown = Math.min(res.list.length, 20), n = Math.max(1, Math.ceil(shown / 5));
+  const nav = [...root.children].find(el => el.classList.contains('pnav'));
+  for (let k = 0; k < n; k++) {
+    const pg = makePage(`${k * 5 + 1}~${k * 5 + 5}위`), ol = document.createElement('ol');
+    ol.className = 'rank-list';
+    renderRankList(ol, res.list, { n: save.nick, s: save.best[tab] || -1 }, 5, k * 5);
+    pg.append(ol);
+    root.insertBefore(pg, nav || null);
+  }
+  pager(root);
   $('rankNote').textContent = res.online ? '🌐 온라인 랭킹 · 친구들과 함께 겨뤄요'
     : res.failed ? '⚠ 온라인 랭킹에 연결하지 못해 이 기기의 기록만 보여줘요'
     : '📱 이 기기에 저장된 기록이에요';
@@ -2508,6 +2682,7 @@ async function showBoard() {
   };
   requestAnimationFrame(tick);
 
+  pager($('overPager'));
   showScreen('over');
 
   // 랭킹 등록
@@ -3631,9 +3806,12 @@ let story = null, dlg = null, mini = null, storyRun = null, storyPrev = null, pe
 
 function openStoryHome() {
   toMenuState();
-  const box = $('chapterList'), seen = save.endings || [];
-  box.innerHTML = '';
-  for (const id of CH_ORDER) {
+  const root = $('chapterPager'), seen = save.endings || [];
+  clearPages(root);
+  const nav = [...root.children].find(el => el.classList.contains('pnav'));
+  let box = null;
+  CH_ORDER.forEach((id, idx) => {
+    if (idx % 3 === 0) { box = makePage(); root.insertBefore(box, nav || null); }
     const c = CHAPTERS[id], open = chUnlocked(c);
     const b = document.createElement('button');
     b.className = 'chap' + (c.no > 1 ? ' sub' : '') + (!open ? ' locked' : !c.ready ? ' soon' : '');
@@ -3653,7 +3831,8 @@ function openStoryHome() {
       if (open && c.ready) { A.play('click'); openChapter(id); } else A.play('deny');
     });
     box.append(b);
-  }
+  });
+  pager(root);
   showScreen('storyHome');
 }
 let curChapter = 'ch1';
@@ -3687,6 +3866,8 @@ function openChapter(id) {
     fl.append(li);
   });
   $('stCont').classList.toggle('hidden', !(save.story && save.story.node && (save.story.ch || 'ch1') === id));
+  pager($('chPager'), openChapter.tab || 0);
+  openChapter.tab = 0;
   showScreen('chapterCard');
 }
 function storyStart(id, resume) {
@@ -3962,6 +4143,8 @@ function showEnding(id) {
       um.textContent = '➡ 다음 장은 준비 중이에요!';
       um.classList.remove('hidden');
     } else um.classList.add('hidden');
+    $('edToNext').classList.add('hidden');
+    pager($('edPager'));
     showScreen('endingCard');
     A.play(e.good ? 'unlock' : 'over');
     if (newly.length) setTimeout(() => A.play('unlock'), 700);
@@ -4033,7 +4216,7 @@ function parcelLoop(now) {
     if (pt >= .7) { parcel.phase = 'open'; parcel.phaseT = 0; A.play('stamp'); }
   } else if (parcel.phase === 'open') {
     peel = 1; open = Math.min(1, pt / .4);
-    if (pt >= .4 && !parcel.shown) { parcel.shown = true; showRewards(); }
+    if (pt >= .4 && !parcel.shown) { parcel.shown = true; $('edGift').classList.add('small'); showRewards(); }
   }
   drawParcel(peel, open, parcel.t);
   if (!$('endingCard').classList.contains('hidden')) parcel.raf = requestAnimationFrame(parcelLoop);
@@ -4041,7 +4224,7 @@ function parcelLoop(now) {
 }
 function resetParcel(isNew) {
   Object.assign(parcel, { phase: 'idle', t: 0, phaseT: 0, last: 0, shown: false });
-  $('edGift').classList.remove('opened');
+  $('edGift').classList.remove('opened', 'small');
   $('parcelCap').textContent = isNew ? '📦 택배 도착! 테이프를 뜯어 보세요 (터치)' : '📦 이 엔딩의 보상 상자 (터치)';
   if (!parcel.raf) parcel.raf = requestAnimationFrame(parcelLoop);
 }
@@ -4076,6 +4259,7 @@ function showRewards() {
     tx.append(sm); row.append(ic, tx); box.append(row);
   }
   box.classList.remove('hidden');
+  $('edToNext').classList.remove('hidden');
   A.play('unlock');
 }
 
@@ -4161,11 +4345,8 @@ window.addEventListener('keydown', e => {
     if (visible('chapterCard') && k === 'Escape') { openStoryHome(); return; }
     if (visible('home') && (k === 'Enter' || k === ' ')) { A.play('click'); openMapSelect(); }
     else if (visible('mapsel')) {
-      if (k === 'Enter' || k === ' ') startGame();
-      if (k === 'ArrowLeft' || k === 'ArrowRight') {
-        const open = MAPS.filter(isUnlocked), i = open.indexOf(map);
-        selectMap(open[(i + (k === 'ArrowRight' ? 1 : open.length - 1)) % open.length]);
-      }
+      if (k === 'Enter' || k === ' ') tryStart();
+      if (k === 'ArrowLeft' || k === 'ArrowRight') { const pg = $('mapPager').pager; pg.go(pg.i + (k === 'ArrowRight' ? 1 : -1), true); }
       if (k === 'Escape') openHome();
     } else if (visible('rank') && k === 'Escape') openHome();
   } else if (state === 'over') {
@@ -4199,7 +4380,7 @@ $('goRank').addEventListener('click', () => { A.play('click'); openRank(); });
 $('goId').addEventListener('click', () => { A.play('click'); openIdCard(); });
 $('idOk').addEventListener('click', confirmId);
 $('mapBack').addEventListener('click', () => { A.play('click'); openHome(); });
-$('startBtn').addEventListener('click', startGame);
+$('startBtn').addEventListener('click', tryStart);
 $('rankBack').addEventListener('click', () => { A.play('click'); openHome(); });
 $('retryBtn').addEventListener('click', startGame);
 $('homeBtn').addEventListener('click', () => { A.play('click'); openHome(); });
@@ -4216,7 +4397,9 @@ $('rcStart').addEventListener('click', startRound);
 $('rsNext').addEventListener('click', goNext);
 $('rsRetry').addEventListener('click', retryRound);
 $('edGift').addEventListener('click', openGift);
-$('edFlow').addEventListener('click', () => { A.play('click'); openChapter(story.ch); });
+$('edFlow').addEventListener('click', () => { A.play('click'); openChapter.tab = 1; openChapter(story.ch); });
+$('edToGift').addEventListener('click', () => $('edPager').pager.go(1, true));
+$('edToNext').addEventListener('click', () => $('edPager').pager.go(2, true));
 $('edRetry').addEventListener('click', () => { A.play('click'); storyStart(story.ch, false); });
 $('edMenu').addEventListener('click', () => { A.play('click'); openStoryHome(); });
 canvas.addEventListener('mousedown', e => {
@@ -4231,6 +4414,7 @@ function showNotice(force) {
   if (!force && save.noticeSeen === NOTICE_VER) return;
   $('noticeHide').checked = save.noticeSeen === NOTICE_VER;
   const n = $('notice');
+  pager($('noticePager'));
   n.classList.remove('hidden');
   n.scrollTop = 0;
   const card = n.querySelector('.card');
@@ -4258,6 +4442,7 @@ resize();
 reset();
 buildMapCards();
 refreshMute();
+pager($('overPager')); pager($('chPager')); pager($('edPager')); pager($('noticePager'));
 if (save.nick) openHome(); else openIdCard();
 showNotice(false);
 // 버프 방울 미리 굽기 (게임 시작 직후 끊김 방지)
