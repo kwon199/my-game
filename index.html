@@ -297,6 +297,14 @@
   .slip-total b { font-size: 20px; }
   .comment { margin: 4px 0 0; font-size: 14px; }
   #scoreLine { margin: 2px 0; font-size: 12px; }
+  #timeHud {
+    position: absolute; left: 10px; bottom: calc(8px + env(safe-area-inset-bottom)); z-index: 3; pointer-events: none;
+    color: #fff; font-size: 15px; line-height: 1.35; white-space: nowrap; visibility: hidden;
+    text-shadow: 2px 0 #1a1a2e, -2px 0 #1a1a2e, 0 2px #1a1a2e, 0 -2px #1a1a2e, 2px 2px #1a1a2e, -2px -2px #1a1a2e, 2px -2px #1a1a2e, -2px 2px #1a1a2e;
+  }
+  #hud.playing ~ #timeHud { visibility: visible; }
+  #timeHud #power { font-size: 13px; }
+  #timeHud #power:empty { display: none; }
 </style>
 </head>
 <body>
@@ -307,11 +315,12 @@
     <div id="scorePill" class="pill playing-only"><div class="lbl" id="mapLbl"></div><div class="val"><span id="score">0</span>점</div><div class="perks" id="perkRow"></div></div>
     <div class="hud-right">
       <button id="muteBtn" class="pill">♪ ON</button>
-      <div class="pill playing-only">⏱ <span id="time">0.0</span>s <span id="power"></span></div>
       <div class="pill playing-only" id="gaugePill"><span id="gauge"></span></div>
       <div class="pill playing-only" id="bossPill"><span id="bossTxt"></span></div>
     </div>
   </div>
+
+  <div id="timeHud"><div id="power"></div><div>⏱ <span id="time">0.0</span>s</div></div>
 
   <!-- 홈 -->
   <div id="home" class="overlay hidden">
@@ -677,7 +686,7 @@ const CHARS = [
     look: { suit: '#8e97aa', suit2: '#6b7385', pants: '#5d6579', pants2: '#474e60', hair: '#3a2a1a', tie: null, lanyard: true },
   },
   {
-    id: 'newbie_f', name: '신입사원 (여)', icon: '🌱', desc: '밝은 에너지의 멀티플레이어', speed: 1.1, fire: .28, power: 1, stats: [4, 3, 1],
+    id: 'newbie_f', name: '인턴', icon: '🌱', desc: '밝은 에너지의 멀티플레이어', speed: 1.1, fire: .28, power: 1, stats: [4, 3, 1],
     look: { suit: '#8e97aa', suit2: '#6b7385', skirt: '#5d6579', pants: '#3a3a4a', pants2: '#2e2e3c', hair: '#3a2a1a', tie: null, lanyard: true, female: true, hs: 'pony' },
   },
   {
