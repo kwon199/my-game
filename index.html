@@ -190,6 +190,16 @@
   .endings li { padding: 6px 10px; font-size: 13px; border-bottom: 2px dashed rgba(128,128,128,.35); }
   .endings li:last-child { border-bottom: 0; }
   .endings li.locked { color: var(--muted); }
+  .chap { display: block; width: 100%; text-align: left; font-family: inherit; color: inherit; border: 3px solid var(--line); background: var(--paper2); padding: 10px 12px; margin: 8px 0; cursor: pointer; }
+  .chap.sub { position: relative; margin-left: 22px; width: calc(100% - 22px); }
+  .chap.sub::before { content: '└'; position: absolute; left: -20px; top: 12px; color: var(--muted); }
+  .chap .no { font-size: 11px; color: var(--muted); }
+  .chap .tt { font-size: 17px; margin: 3px 0; }
+  .chap .ds { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .chap .st { font-size: 12px; margin-top: 5px; color: var(--green); }
+  .chap.locked { cursor: not-allowed; }
+  .chap.locked .st { color: var(--red); }
+  .chap.soon .st { color: #d4a017; }
 </style>
 </head>
 <body>
@@ -296,15 +306,24 @@
   <!-- 스토리 모드 -->
   <div id="storyHome" class="overlay hidden">
     <div class="card">
-      <div class="muted">📖 스토리 모드 · 제1장</div>
-      <div class="logo" style="font-size:28px">인턴의 수난시대</div>
-      <p class="sub">정직원 될 수 있을까?</p>
-      <p class="rc-desc">대박무역(주) 인턴이 되어 정직원 전환에 도전하세요! 대화 속 선택과 미니게임 결과에 따라 이야기가 갈라지고, 라운드를 깰 때마다 진급해요. 스토리 모드에선 캐릭터가 <b>인턴</b>으로 고정돼요.</p>
+      <div class="screen-title">📖 스토리 모드</div>
+      <p class="sub">어떤 엔딩을 보느냐에 따라 다음 이야기가 달라져요!</p>
+      <div id="chapterList"></div>
+      <button id="stBack" class="pbtn alt wide">← 홈</button>
+    </div>
+  </div>
+
+  <div id="chapterCard" class="overlay hidden">
+    <div class="card">
+      <div class="muted" id="chNo"></div>
+      <div class="logo" style="font-size:28px" id="chTitle"></div>
+      <p class="sub" id="chSub"></p>
+      <p class="rc-desc" id="chIntro"></p>
       <div class="sub-title">📚 엔딩 도감 <span id="edTotal"></span></div>
       <ul class="endings" id="endingList"></ul>
       <button id="stCont" class="pbtn wide hidden">▶ 이어하기</button>
       <button id="stNew" class="pbtn wide story">처음부터 시작 ▶</button>
-      <button id="stBack" class="pbtn alt wide">← 홈</button>
+      <button id="chBack" class="pbtn alt wide">← 챕터 목록</button>
     </div>
   </div>
 
@@ -347,6 +366,7 @@
       <p class="rc-desc" id="edText"></p>
       <p class="big-rank" id="edRank"></p>
       <p class="muted" id="edCount"></p>
+      <p class="unlock hidden" id="edUnlock"></p>
       <div class="btns">
         <button id="edRetry" class="pbtn story">처음부터 다시</button>
         <button id="edMenu" class="pbtn alt">스토리 메뉴</button>
@@ -1690,7 +1710,7 @@ function loop(now) {
 }
 
 // ================= 화면 전환 =================
-const SCREENS = ['home', 'idcard', 'mapsel', 'rank', 'over', 'storyHome', 'dialog', 'roundCard', 'resultCard', 'endingCard'];
+const SCREENS = ['home', 'idcard', 'mapsel', 'rank', 'over', 'storyHome', 'chapterCard', 'dialog', 'roundCard', 'resultCard', 'endingCard'];
 function showScreen(id) {
   for (const s of SCREENS) $(s).classList.toggle('hidden', s !== id);
   const card = $(id).querySelector('.card');
@@ -1962,11 +1982,14 @@ const LOOKS = {
   lee: { style: 'bob', hair: '#1a1a2e', suit: '#4a4a5a', shirt: true, glasses: true, lip: '#b0405a' },
   choi: { style: 'slick', hair: '#c9c9d1', suit: '#1c1c22', shirt: true, tie: '#e2b43c', mustache: '#c9c9d1' },
   kang: { style: 'short', hair: '#1a1a1a', suit: '#3d6b3d', headband: true, brows: true },
+  des: { style: 'bob', hair: '#e04fa0', suit: '#2b2b2b', collar: '#f4f4f4', lip: '#c0395a' },
+  dev: { style: 'short', hair: '#3a2a1a', suit: '#5a6b4a', glasses: true },
 };
 const PEOPLE = {
   me: { name: () => `${save.nick} (나)` }, mom: { name: '엄마' }, kim: { name: '김부장' },
   park: { name: '박대리 · 사수' }, lee: { name: '이과장 · 인사팀' }, choi: { name: '최사장 · 거래처' },
   kang: { name: '강위원장 · 노조' }, ceo: { name: '사장님' },
+  des: { name: '나실장 · 디자인팀' }, dev: { name: '오책임 · 개발팀' },
 };
 const PORTRAITS = {};
 for (const k in LOOKS) {
@@ -2252,6 +2275,10 @@ const MINI = {
     },
     update(m, dt) {
       m.flash[0] -= dt; m.flash[1] -= dt;
+      if (m.twist && !m.twisted && m.t >= m.twist) {
+        m.twisted = true; shake = 6; A.play('warn');
+        floatText(LW / 2, LH * .35, '사장님: 방향 바꿔!! 템포 UP', '#ff6b6b', 1.3);
+      }
       m.meter = Math.max(0, m.meter - 1.2 * dt);
       for (const n of m.notes) {
         if (!n.judged && m.t > n.time + .2) {
@@ -2262,8 +2289,9 @@ const MINI = {
       }
       if (m.meter <= 0) { m.reason = '청중 전원 취침… 😴'; return 'lose'; }
       if (m.t >= m.end) {
-        if (m.meter >= 60) return 'win';
-        m.reason = `청중 반응 ${m.meter | 0}%… 60%가 안 돼요`; return 'lose';
+        const goal = m.goal || 60;
+        if (m.meter >= goal) return 'win';
+        m.reason = `청중 반응 ${m.meter | 0}%… ${goal}%가 안 돼요`; return 'lose';
       }
     },
     press(m, dir) {
@@ -2298,7 +2326,7 @@ const MINI = {
       R(px + 6, LH - 4 - 16, 8, 1, '#8a5a2b');
     },
     hud(m) {
-      topBar(`청중 반응${m.combo > 1 ? ` · ${m.combo} COMBO` : ''}`, m.meter / 100, `${m.meter | 0}%`, m.meter >= 60 ? '#3ddc84' : '#ffb020', .6);
+      topBar(`청중 반응${m.combo > 1 ? ` · ${m.combo} COMBO` : ''}`, m.meter / 100, `${m.meter | 0}%`, m.meter >= (m.goal || 60) ? '#3ddc84' : '#ffb020', (m.goal || 60) / 100);
     },
   },
 
@@ -2407,7 +2435,7 @@ const MINI = {
   },
 
   overtime: {
-    title: '야근 버티기', icon: '🌙', scene: 'office', dodge: true,
+    title: '야근 버티기', icon: '🌙', scene: 'office', dodge: true, goal: () => 30,
     desc: '쏟아지는 업무폭탄을 30초 동안 버티세요! 클립으로 격파할 수 있고, 버프도 그대로 쓸 수 있어요.',
     controls: '← → 이동 · 📎 클립 자동 발사 (스페이스 속사)',
   },
@@ -2574,33 +2602,473 @@ function judge(f) {
   return 'E8';
 }
 
+
+// ================= 제2장: 첫 프로젝트 =================
+const REQS = [
+  { t: '해외 결제 기능', must: 1, from: '해외팀' }, { t: '배송 조회', must: 1, from: '고객센터' },
+  { t: '다국어 지원 (영어·베트남어)', must: 1, from: '해외팀' }, { t: '로그인 / 회원가입', must: 1, from: '개발팀' },
+  { t: '상품 검색', must: 1, from: '영업팀' }, { t: '반품·환불 안내', must: 1, from: '고객센터' },
+  { t: '모바일 화면 지원', must: 1, from: '디자인팀' }, { t: '재고 연동', must: 1, from: '물류팀' },
+  { t: '부장님 사진 메인 배너', must: 0, from: '김부장' }, { t: '로고 3D 회전 애니메이션', must: 0, from: '디자인팀' },
+  { t: '사내 노래방 예약 기능', must: 0, from: '총무팀' }, { t: '메타버스 쇼룸', must: 0, from: '사장님' },
+  { t: '사장님 어록 게시판', must: 0, from: '비서실' }, { t: '고양이 마스코트 춤 모션', must: 0, from: '디자인팀' },
+  { t: '배경음악 자동 재생', must: 0, from: '김부장' }, { t: 'NFT 굿즈 판매', must: 0, from: '사장님' },
+];
+const GANTT_TASKS = ['기획서', '디자인 시안', '개발 환경', '상품 등록', '결제 연동', '테스트', '번역 검수', '런칭 준비'];
+const FIRE_MSG = {
+  '서버': ['서버 CPU 100%!', '결제 오류 발생!', '사이트 접속 불가!'],
+  '고객 클레임': ['배송 언제 와요?!', '환불해 주세요!', '번역이 이상해요!'],
+  '사장님 전화': ['사장님: 매출 얼마야?', '사장님: 왜 안 열려?', '사장님: 메타버스는?'],
+};
+
+function sortAnswer(m, side) {
+  const c = m.cards[m.i];
+  const right = side >= 0 && (side === 0) === !!c.must;
+  if (right) { m.ok++; A.play('eat', 4); } else { m.bad++; A.play('ding'); shake = 4; }
+  m.fbText = right ? (c.must ? '필수 ✔ 좋아요!' : '보류 ✔ 좋아요!') : side < 0 ? '시간 초과!' : c.must ? '그건 꼭 필요해요!' : '그건 보류해야죠!';
+  m.fbRight = right; m.fbSide = side; m.fb = .9;
+  m.i++; m.p = 0;
+}
+function ganttPlace(m) {
+  const r = m.rows[m.i];
+  r.placed = m.bx;
+  r.good = 1 - Math.abs(m.bx - r.gx) / r.w >= .6;
+  if (r.good) { m.ok++; A.play('eat', 4); } else { m.bad++; A.play('ding'); shake = 4; }
+  m.fbText = r.good ? `「${r.name}」 일정 딱 맞음!` : `「${r.name}」 일정이 어긋났다…`;
+  m.fbRight = r.good; m.fb = .9;
+  m.i++; m.wait = 0;
+  const next = m.rows[m.i];
+  if (next) { m.bx = Math.random() < .5 ? 0 : 1 - next.w; m.dir = m.bx ? -1 : 1; }
+}
+
+Object.assign(MINI, {
+  sort: {
+    title: '요구사항 정리', icon: '📋', scene: 'meeting', song: () => MAPS[1].song,
+    desc: f => (f.rush ? '급하게 시작해서 카드가 빨리 떨어져요! ' : '') + '쏟아지는 요청 카드를 분류하세요! 꼭 필요한 건 ← 필수, 쓸데없는 건 보류 →. 카드가 바닥에 닿기 전에! 14장 중 10장 이상 맞히면 성공.',
+    controls: '← 필수 · 보류 → (휴대폰: 좌우 터치)',
+    create: f => ({ cards: shuffle(REQS).slice(0, 14), i: 0, p: 0, speed: f.rush ? 1.35 : 1, ok: 0, bad: 0, fb: 0, fbText: '', fbRight: false, fbSide: -1 }),
+    update(m, dt) {
+      m.fb -= dt;
+      if (m.i >= m.cards.length) {
+        if (m.ok >= 10) return 'win';
+        m.reason = `정리 성공 ${m.ok}/14… 요구사항이 산으로 갔다`; return 'lose';
+      }
+      m.p += dt * m.speed / Math.max(1.8, 4.4 - m.i * .13);
+      if (m.p >= 1) sortAnswer(m, -1);
+    },
+    press(m, dir) { if (m.i < m.cards.length) sortAnswer(m, dir < 0 ? 0 : 1); },
+    hud(m) {
+      topBar(`요청 ${Math.min(m.i + 1, m.cards.length)} / ${m.cards.length} · 정리 성공 ${m.ok}개 (10개 목표)`, m.ok / 10, '', '#ffd76a');
+      const bh = 74, by = H - bh - 18, bw = (W - 36) / 2;
+      [['◀ 필수', '#1f8a4c'], ['보류 ▶', '#6d6a5c']].forEach(([label, col], k) => {
+        const x = 12 + k * (bw + 12);
+        ctx.fillStyle = '#1a1a2e'; ctx.fillRect(x - 3, by - 3, bw + 6, bh + 6);
+        ctx.fillStyle = m.fb > 0 && m.fbSide === k ? (m.fbRight ? '#9ff0bf' : '#ffb3b3') : col;
+        ctx.fillRect(x, by, bw, bh);
+        text(label, x + bw / 2, by + bh / 2, 20, '#ffffff');
+      });
+      if (m.i < m.cards.length) {
+        const c = m.cards[m.i], cw = Math.min(W - 40, 320), cx = (W - cw) / 2, ch = 88;
+        const y = 90 + m.p * (by - 16 - ch - 90);
+        ctx.fillStyle = '#1a1a2e'; ctx.fillRect(cx - 3, y - 3, cw + 6, ch + 6);
+        ctx.fillStyle = '#fffdf5'; ctx.fillRect(cx, y, cw, ch);
+        ctx.fillStyle = '#4c7eac'; ctx.fillRect(cx, y, cw, 24);
+        ctx.font = `12px ${FONT}`; ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(`요청 #${m.i + 1} · 요청자: ${c.from}`, cx + cw / 2, y + 12);
+        ctx.font = `17px ${FONT}`; ctx.fillStyle = '#1a1a2e';
+        const lines = wrapText(c.t, cw - 20);
+        lines.forEach((l, j) => ctx.fillText(l, cx + cw / 2, y + 44 + (j - (lines.length - 1) / 2) * 22 + 6));
+      }
+      if (m.fb > 0) text(m.fbText, W / 2, by - 22, 16, m.fbRight ? '#7dff9a' : '#ff6b6b');
+    },
+  },
+
+  gantt: {
+    title: '일정 짜기 (간트차트)', icon: '📅', scene: 'meeting', song: () => MAPS[0].song,
+    desc: f => (f.yes ? '"2주 안에" 하기로 해서 빈칸이 좁고 블록이 빨라요! ' : '') + '업무 블록이 좌우로 움직여요. 일정표의 노란 점선 칸에 맞춰 ← 또는 → 를 눌러 내려놓으세요! 8개 중 6개 이상 성공.',
+    controls: '← 또는 → 누르기 = 블록 내려놓기',
+    create(f) {
+      const w = f.yes ? .16 : .24;
+      const rows = GANTT_TASKS.map(name => ({ name, w, gx: .04 + Math.random() * (.92 - w), placed: null, good: false }));
+      return { rows, i: 0, bx: 0, dir: 1, speed: f.yes ? .95 : .7, ok: 0, bad: 0, wait: 0, fb: 0, fbText: '', fbRight: false };
+    },
+    update(m, dt) {
+      m.fb -= dt;
+      if (m.i >= m.rows.length) {
+        if (m.ok >= 6) return 'win';
+        m.reason = `일정 ${m.ok}/8개만 맞췄다… 일정표가 엉망!`; return 'lose';
+      }
+      const r = m.rows[m.i];
+      m.bx += m.dir * m.speed * (1 + m.i * .09) * dt;
+      if (m.bx < 0) { m.bx = 0; m.dir = 1; }
+      if (m.bx > 1 - r.w) { m.bx = 1 - r.w; m.dir = -1; }
+      m.wait += dt;
+      if (m.wait > 6) ganttPlace(m);
+    },
+    press(m) { if (m.i < m.rows.length) ganttPlace(m); },
+    hud(m) {
+      topBar(`일정 배치 ${Math.min(m.i + 1, 8)} / 8 · 성공 ${m.ok}개 (6개 목표)`, m.ok / 6, '', '#8fd3ff');
+      const x0 = 92, cw = W - 14 - x0, rh = Math.min(40, (H - 230) / 8), y0 = 104;
+      for (let k = 0; k < 4; k++) text(`${k + 1}주`, x0 + cw * (k + .5) / 4, y0 - 12, 11, '#ffffff');
+      m.rows.forEach((r, i) => {
+        const y = y0 + i * rh;
+        text(r.name, x0 - 8, y + rh / 2, 12, i === m.i ? '#ffd76a' : '#ffffff', 'right');
+        ctx.fillStyle = 'rgba(16,18,34,.85)'; ctx.fillRect(x0, y + 3, cw, rh - 6);
+        ctx.fillStyle = 'rgba(255,255,255,.12)';
+        for (let k = 1; k < 4; k++) ctx.fillRect(x0 + cw * k / 4, y + 3, 1, rh - 6);
+        ctx.strokeStyle = '#ffd76a'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
+        ctx.strokeRect(x0 + r.gx * cw, y + 5, r.w * cw, rh - 10);
+        ctx.setLineDash([]);
+        if (r.placed !== null) { ctx.fillStyle = r.good ? '#3ddc84' : '#ff4d5e'; ctx.fillRect(x0 + r.placed * cw, y + 7, r.w * cw, rh - 14); }
+        else if (i === m.i) { ctx.fillStyle = '#8fd3ff'; ctx.fillRect(x0 + m.bx * cw, y + 7, r.w * cw, rh - 14); }
+      });
+      if (m.fb > 0) text(m.fbText, W / 2, y0 + 8 * rh + 22, 16, m.fbRight ? '#7dff9a' : '#ff6b6b');
+    },
+  },
+
+  mailbomb: {
+    title: '협업 메일 폭탄', icon: '📧', scene: 'office', dodge: true, goal: f => (f.mail ? 40 : 30),
+    desc: f => (f.mail ? '메일로 하나하나 답하느라 40초를 버텨야 해요! ' : '합동 회의 덕분에 30초만 버티면 돼요! ') + '디자인팀·개발팀 메일이 폭탄처럼 쏟아져요. 피하거나 클립으로 격파하며 버티세요!',
+    controls: '← → 이동 · 📎 클립 자동 발사 (스페이스 속사)',
+  },
+
+  launch: {
+    title: '런칭 D-day', icon: '🚀', scene: 'work', song: () => MAPS[2].song,
+    desc: f => (f.shift ? '교대 근무 동료가 가끔 불을 꺼 줘요! ' : '') + '서버·고객 클레임·사장님 전화, 세 곳에서 동시에 불이 나요! 불난 곳 앞에 서 있으면 진화돼요. 불이 커져 터지면 경고 1회, 3회면 실패! 30초 버티면 런칭 성공!',
+    controls: '← → 이동 (불난 곳 앞에 서 있기)',
+    create: f => ({
+      dur: 30, x: LW / 2, face: 1, moving: false, strikes: 0, help: !!f.shift, helpT: 7, spawnT: 1.2,
+      stations: [['서버', .18], ['고객 클레임', .5], ['사장님 전화', .82]].map(([name, px]) => ({ name, x: LW * px, fire: 0, prog: 0 })),
+    }),
+    update(m, dt) {
+      moveRunner(m, dt, 1.05);
+      m.spawnT -= dt;
+      if (m.spawnT <= 0) {
+        m.spawnT = Math.max(.9, 2.4 - m.t * .045);
+        const idle = m.stations.filter(st => !st.fire);
+        if (idle.length) {
+          const st = pick(idle);
+          st.fire = .01; st.prog = 0;
+          floatText(st.x, LH - 72, pick(FIRE_MSG[st.name]), '#ff6b6b');
+          A.play('warn');
+        }
+      }
+      for (const st of m.stations) {
+        if (!st.fire) continue;
+        if (Math.abs(st.x - m.x) < 10) {
+          st.prog += dt;
+          if (st.prog >= 1) {
+            st.fire = 0; st.prog = 0;
+            floatText(st.x, LH - 60, '해결!', '#7dff9a'); burst(st.x, LH - 40, ['#7dff9a', '#ffffff'], 10); A.play('kill');
+            continue;
+          }
+        } else st.prog = Math.max(0, st.prog - dt * .5);
+        st.fire += dt / 5;
+        if (st.fire >= 1) {
+          st.fire = 0; st.prog = 0; m.strikes++; shake = 10;
+          burst(st.x, LH - 40, BOOM, 20, 80); floatText(st.x, LH - 60, '펑! 경고 +1', '#ff4d5e'); A.play('grab');
+          if (m.strikes >= 3) { m.reason = '서버 폭발… 런칭 실패!'; return 'lose'; }
+        }
+      }
+      if (m.help) {
+        m.helpT -= dt;
+        if (m.helpT <= 0) {
+          m.helpT = 7;
+          const burning = m.stations.filter(st => st.fire);
+          if (burning.length) {
+            const st = burning.reduce((a, b) => (a.fire > b.fire ? a : b));
+            st.fire = 0; st.prog = 0;
+            floatText(st.x, LH - 72, '동료가 해결!', '#8fd3ff'); A.play('coin');
+          }
+        }
+      }
+      if (m.t >= m.dur) return 'win';
+    },
+    draw(m, g, t) {
+      const R = rect(g), ft = LH - 20;
+      for (const st of m.stations) {
+        const x = Math.round(st.x);
+        R(x - 10, ft - 12, 20, 2, '#8a5a34'); R(x - 9, ft - 10, 18, 10, '#5a3a1f');
+        R(x - 6, ft - 22, 12, 9, '#1a1a2e');
+        R(x - 5, ft - 21, 10, 7, st.fire ? ((t * 8 | 0) % 2 ? '#ff4d5e' : '#ffb020') : '#3ddc84');
+        if (st.fire) {
+          const h = 3 + Math.round(st.fire * 14);
+          for (let i = 0; i < 5; i++) {
+            const fh = Math.max(2, h - Math.abs(i - 2) * 2 + ((t * 12 + i) | 0) % 3);
+            R(x - 5 + i * 2, ft - 23 - fh, 2, fh, i % 2 ? '#ff8a2a' : '#ff4d5e');
+          }
+          R(x - 1, ft - 24 - Math.round(h * .7), 2, 3, '#ffd76a');
+          if (st.prog > 0) { R(x - 8, ft + 3, 16, 2, '#1a1a2e'); R(x - 8, ft + 3, Math.round(16 * Math.min(1, st.prog)), 2, '#7dff9a'); }
+        }
+      }
+      drawRunnerAt(g, m.x, m.face, m.moving, t);
+    },
+    hud(m) {
+      topBar(`런칭 D-day · 경고 ${'💥'.repeat(m.strikes)}${'⬜'.repeat(3 - m.strikes)}`, 1 - Math.max(0, m.t) / m.dur, `${Math.max(0, m.dur - Math.max(0, m.t)).toFixed(1)}s`, '#ff9ad5');
+      for (const st of m.stations) text(st.name, st.x * S, (LH - 20 - 46) * S, 12, st.fire ? '#ff6b6b' : '#ffffff');
+    },
+  },
+});
+MINI.pt2 = {
+  ...MINI.pt,
+  title: '중간 보고 PT', icon: '📈', song: undefined,
+  desc: f => (f.persuade ? '데이터로 설득해야 해서 목표가 65%예요! ' : '사장님 뜻대로 가서 목표가 55%예요. ') + '중간에 사장님이 "방향 바꿔!"를 외치면 템포가 빨라져요. 화살표가 선에 닿을 때 같은 방향을 누르세요!',
+  create(f) {
+    const bpm = 112, beat = 60 / bpm, notes = [], twistBeat = 4 + Math.floor(11 / beat);
+    for (let b = 4; b < 4 + Math.floor(21 / beat); b++) {
+      const late = b >= twistBeat;
+      if (Math.random() < (late ? .9 : .7)) notes.push({ time: b * beat, lane: Math.random() < .5 ? 0 : 1 });
+      if (Math.random() < (late ? .4 : .1)) notes.push({ time: (b + .5) * beat, lane: Math.random() < .5 ? 0 : 1 });
+    }
+    notes.sort((a, b) => a.time - b.time);
+    return { notes, meter: 50, combo: 0, flash: [0, 0], end: notes[notes.length - 1].time + 1.2, song: { ...MAPS[2].song, bpm }, goal: f.persuade ? 65 : 55, twist: twistBeat * beat - 1.5 };
+  },
+};
+
+const RANKS2 = ['신입 사원', '실무 담당', '서브 PM', 'PM 대행', '프로젝트 리더', '팀장 후보'];
+const NODES2 = {
+  p1: {
+    scene: 'office',
+    lines: f => [
+      ['narr', '[정직원 1개월 차] 대박무역(주) 영업2팀.'],
+      ...(f.ace
+        ? [['kim', '어이, {nick} 대리! 특채로 왔으니 실력 좀 보여줘야지?']]
+        : [['kim', '{nick} 씨, 이제 정직원이니까 제대로 된 일 좀 해 봐야지?']]),
+      ['kim', '우리 회사 첫 온라인 수출몰 런칭 프로젝트! 자네가 실무를 맡아.'],
+      ['park', '축하해요! …근데 이거 작년에 두 명이 도망간 프로젝트예요.'],
+      ['me', '(…축하받을 일 맞나?)'],
+      ['park', '킥오프 회의에서 요청이 엄청 쏟아질 거예요. 어떻게 할래요?'],
+    ],
+    choices: [
+      { t: '🧐 요구사항부터 꼼꼼하게 정리한다', set: { careful: 1 }, go: 'q1' },
+      { t: '⚡ 일단 빠르게 시작하고 본다 (어려움)', set: { rush: 1 }, go: 'q1' },
+    ],
+  },
+  q1: { round: 'sort', win: 'p2', lose: 'p1b' },
+  p1b: {
+    scene: 'meeting', set: { creep: 1 }, next: 'p2',
+    lines: [
+      ['narr', '결국 "부장님 사진 메인 배너"와 "메타버스 쇼룸"이 필수 기능에 들어갔다.'],
+      ['park', '…범위가 두 배가 됐네요.'],
+    ],
+  },
+  p2: {
+    scene: 'office',
+    lines: [
+      ['narr', '[킥오프 다음 날] 일정표를 짜야 한다.'],
+      ['kim', '런칭은 2주 뒤! 2주면 되지? 라떼는 일주일 만에 했어.'],
+      ['park', '(작게) 현실적으로는 4주는 걸려요…'],
+    ],
+    choices: [
+      { t: '📆 데이터로 현실적인 일정(4주)을 제시한다', set: { realistic: 1 }, go: 'q2' },
+      { t: '🫡 "네! 2주 안에 하겠습니다!" (어려움)', set: { yes: 1 }, go: 'q2' },
+    ],
+  },
+  q2: { round: 'gantt', win: 'p3', lose: 'p2b' },
+  p2b: {
+    scene: 'office', set: { delay: 1 }, next: 'p3',
+    lines: [
+      ['narr', '일정표가 엉망이 됐다. 벌써 일주일이 밀렸다.'],
+      ['kim', '일정이 왜 이래! 주말에 나와서 맞춰!'],
+    ],
+  },
+  p3: {
+    scene: 'office',
+    lines: [
+      ['narr', '[런칭 3주 전] 디자인팀, 개발팀과 협업이 시작됐다.'],
+      ['des', '디자인팀 나실장이에요. 시안 수정은 딱 한 번만 돼요. 한 번만.'],
+      ['dev', '개발팀 오책임입니다. 요구사항은 메일로 주세요. 말로는 안 받아요.'],
+      ['me', '(메일이… 벌써 127통 쌓였다.)'],
+    ],
+    choices: [
+      { t: '🗣️ 세 팀 합동 회의로 한 번에 정리한다', set: { meeting: 1 }, go: 'q3' },
+      { t: '📧 메일로 하나하나 답장한다 (40초 버티기)', set: { mail: 1 }, go: 'q3' },
+    ],
+  },
+  q3: { round: 'mailbomb', win: 'p4', lose: 'p3b' },
+  p3b: {
+    scene: 'office', set: { conflict: 1 }, next: 'p4',
+    lines: [
+      ['des', '시안 수정은 한 번이라고 했죠?!'],
+      ['dev', '이건 요구사항에 없던 거잖아요!'],
+      ['narr', '팀 사이 분위기가 얼어붙었다.'],
+    ],
+  },
+  p4: {
+    scene: 'meeting',
+    lines: [
+      ['narr', '[런칭 1주 전] 사장님 앞 중간 보고.'],
+      ['ceo', '음… 요즘은 메타버스라던데. 쇼핑몰 말고 메타버스로 바꾸지?'],
+      ['kim', '(속삭이며) 사장님 말씀이 곧 법이야…'],
+      ['park', '(속삭이며) 지금 바꾸면 런칭 못 해요!'],
+    ],
+    choices: [
+      { t: '🙇 사장님 의견을 그대로 반영한다 (쉬움)', set: { obey: 1 }, go: 'q4' },
+      { t: '📈 데이터로 설득한다 (어려움)', set: { persuade: 1 }, go: 'q4' },
+    ],
+  },
+  q4: { round: 'pt2', win: 'p5', lose: 'p4b' },
+  p4b: {
+    scene: 'meeting', set: { reportfail: 1 }, next: 'p5',
+    lines: [
+      ['ceo', '흠… 무슨 말인지 모르겠군. 알아서 잘 해 봐.'],
+      ['kim', '(한숨) 보고가 그게 뭔가…'],
+    ],
+  },
+  p5: {
+    scene: 'work',
+    lines: f => [
+      ['narr', '[런칭 D-day] 오전 9시 59분. 오픈 1분 전.'],
+      (f.creep || f.delay)
+        ? ['dev', '…솔직히 말하면 테스트를 절반밖에 못 했어요.']
+        : ['dev', '테스트는 다 끝났어요. 이제 기도만 하면 됩니다.'],
+      ['park', '오늘 밤은 길겠네요. 어떻게 버틸래요?'],
+    ],
+    choices: [
+      { t: '🔥 혼자 밤새 대기한다', set: { allnight: 1 }, go: 'q5' },
+      { t: '🤝 팀원들과 교대 근무를 짠다', set: { shift: 1 }, go: 'q5' },
+    ],
+  },
+  q5: { round: 'launch', win: 'final', lose: 'p5b' },
+  p5b: {
+    scene: 'work', set: { crash: 1 }, next: 'final',
+    lines: [
+      ['narr', '오전 10시 3분. 서버가 조용히 쓰러졌다.'],
+      ['me', '(…404 Not Found)'],
+    ],
+  },
+  startup: {
+    scene: 'office',
+    lines: [
+      ['narr', '런칭 다음 날, 오책임이 조용히 커피를 건넸다.'],
+      ['dev', '{nick} 님, 같이 일해 보니까 호흡이 딱이던데… 저랑 창업 안 하실래요?'],
+      ['me', '(창업…?!)'],
+    ],
+    choices: [
+      { t: '🏢 아직은 대박무역에 남는다', set: { stay: 1 }, go: 'final' },
+      { t: '🚪 오책임과 스타트업을 차린다!', go: 'P5' },
+    ],
+  },
+};
+const ENDINGS2 = {
+  P1: { no: 1, icon: '🚀', title: '대박 런칭', scene: 'office', good: true, rank: '프로젝트 리더',
+    text: '런칭 첫날 주문 1만 건! 대박무역 온라인몰이 이름값을 했다. {nick}의 첫 프로젝트는 대성공!',
+    lines: [['ceo', '런칭 첫날 주문 1만 건이라니! {nick} 씨, 대단하군!'], ['kim', '허허, 내가 잘 키웠지!'], ['park', '(엄지 척)']] },
+  P2: { no: 2, icon: '🦜', title: '공은 부장님께', scene: 'office', good: false, rank: '실무 담당 (공은 부장님)',
+    text: '런칭은 성공했지만 사내 게시판엔 "김부장 주도 프로젝트 대성공!"이라는 공지만 올라왔다.',
+    lines: [['narr', '사내 게시판 공지: "김부장님 주도 온라인몰 대성공!"'], ['kim', '다들 수고했어~ 특히 내가.'], ['me', '(…나는?)']] },
+  P3: { no: 3, icon: '🗓️', title: '조용한 런칭 연기', scene: 'work', good: false,
+    text: '서버가 뻗었다. 공지사항: "더 나은 서비스를 위해 런칭을 연기합니다." 다음 달에 다시 도전!',
+    lines: [['narr', '공지사항: "더 나은 서비스를 위해 런칭을 연기합니다."'], ['kim', '…다음 달에 다시 하지.'], ['me', '(조용히 한숨)']] },
+  P4: { no: 4, icon: '🔋', title: '번아웃 휴직', scene: 'work', good: false, rank: '휴직 중',
+    text: '배터리 0%. 한 달 휴직계를 냈다. 오랜만에 본 하늘이 참 파랗다.',
+    lines: [['narr', '런칭 3일째 새벽 4시. 모니터 앞에서 정신을 잃었다.'], ['lee', '{nick} 씨, 한 달 휴직 처리했어요. 푹 쉬세요.']] },
+  P5: { no: 5, icon: '🚪', title: '스타트업 이직', scene: 'office', good: true, rank: '스타트업 공동대표',
+    text: '오책임과 차린 스타트업 "칼퇴컴퍼니". 직원은 둘, 꿈은 유니콘!',
+    lines: [['dev', '우리 회사 이름은 "칼퇴컴퍼니"! 사훈은 "6시 땡"!'], ['me', '직원은 둘, 꿈은 유니콘!']] },
+  P6: { no: 6, icon: '👔', title: '최연소 팀장', scene: 'office', good: true, hidden: true, rank: '팀장',
+    text: '모든 판단이 완벽했다. 입사 1년 만에 대박무역 최연소 팀장 발령!',
+    lines: [['ceo', '모든 판단이 완벽했네. 오늘부터 자네가 신사업팀 팀장이야!'], ['kim', '(…나보다 먼저 팀장이라고?!)'], ['park', '팀장님! 저 좀 데려가 주세요!']] },
+};
+function judge2(f) {
+  const fails = ['creep', 'delay', 'conflict', 'reportfail'].filter(k => f[k]).length;
+  if (f.crash) return f.allnight ? 'P4' : 'P3';
+  if (!fails && f.careful && f.realistic && f.meeting && f.persuade && f.shift) return 'P6';
+  if (f.persuade && f.meeting && !f.stay) return 'startup';
+  if (f.yes && f.obey) return 'P2';
+  if (fails >= 3) return 'P4';
+  return 'P1';
+}
+
+// ================= 장 구성: 엔딩에 따라 다음 장이 열린다 =================
+const CHAPTERS = {
+  ch1: {
+    no: 1, title: '인턴의 수난시대', sub: '정직원 될 수 있을까?', ready: true, route: '',
+    intro: '대박무역(주) 인턴이 되어 정직원 전환에 도전하세요! 대화 속 선택과 미니게임 결과에 따라 이야기가 갈라지고, 라운드를 깰 때마다 진급해요. 스토리 모드에선 캐릭터가 인턴으로 고정돼요.',
+    start: 'c1', nodes: NODES, endings: ENDINGS, ranks: RANKS, judge,
+  },
+  ch2p: {
+    no: 2, title: '첫 프로젝트', sub: '무사히 런칭할 수 있을까?', ready: true, route: '정직원 루트',
+    unlock: ['E3', 'E4'], hint: '1장에서 「정직원 전환 성공」 또는 히든 엔딩을 보면 해금',
+    intro: '정직원이 된 {nick}에게 떨어진 첫 프로젝트! 요구사항 정리부터 런칭 D-day까지, 선택과 미니게임으로 운명이 갈려요. 1장에서 히든 엔딩을 봤다면 대리로 시작해요.',
+    start: 'p1', nodes: NODES2, endings: ENDINGS2, ranks: RANKS2, judge: judge2,
+    startFlags: () => ((save.endings || []).includes('E4') ? { ace: 1 } : {}),
+  },
+  ch2s: { no: 2, title: '이직의 수난시대', sub: '새 회사, 새 꼰대', ready: false, route: '이직 루트', unlock: ['E7'], hint: '1장에서 「거래처 스카우트」 엔딩을 보면 해금' },
+  ch2u: { no: 2, title: '위원장의 수난시대', sub: '구호보다 협상', ready: false, route: '노조 루트', unlock: ['E6'], hint: '1장에서 「인턴분과 위원장」 엔딩을 보면 해금' },
+  ch2r: { no: 2, title: '취준 2회차', sub: '이번엔 다르다', ready: false, route: '재도전 루트', unlock: ['E1', 'E2', 'E5', 'E8'], hint: '1장에서 배드 엔딩(광탈·야근의 늪·표절·영원한 인턴) 중 하나를 보면 해금' },
+};
+const CH_ORDER = Object.keys(CHAPTERS);
+const chUnlocked = c => !c.unlock || c.unlock.some(id => (save.endings || []).includes(id));
+const CHP = () => CHAPTERS[(story && story.ch) || 'ch1'];
+
 // ---------- 진행 ----------
 let story = null, dlg = null, mini = null, storyRun = null, storyPrev = null, pendingRound = null, pendingNext = null;
 
 function openStoryHome() {
   toMenuState();
-  const seen = save.endings || [];
+  const box = $('chapterList'), seen = save.endings || [];
+  box.innerHTML = '';
+  for (const id of CH_ORDER) {
+    const c = CHAPTERS[id], open = chUnlocked(c);
+    const b = document.createElement('button');
+    b.className = 'chap' + (c.no > 1 ? ' sub' : '') + (!open ? ' locked' : !c.ready ? ' soon' : '');
+    b.innerHTML = '<div class="no"></div><div class="tt"></div><div class="ds"></div><div class="st"></div>';
+    b.querySelector('.no').textContent = `제${c.no}장${c.route ? ' · ' + c.route : ''}`;
+    b.querySelector('.tt').textContent = open ? c.title : '🔒 ???';
+    b.querySelector('.ds').textContent = open ? c.sub : c.hint;
+    let st = '잠김';
+    if (open && !c.ready) st = '🚧 준비 중 · 다음 업데이트에서 만나요';
+    else if (open) {
+      const keys = Object.keys(c.endings);
+      st = `📚 엔딩 ${keys.filter(k => seen.includes(k)).length} / ${keys.length}`;
+      if (save.story && save.story.node && (save.story.ch || 'ch1') === id) st += ' · ▶ 이어하기 가능';
+    }
+    b.querySelector('.st').textContent = st;
+    b.addEventListener('click', () => {
+      if (open && c.ready) { A.play('click'); openChapter(id); } else A.play('deny');
+    });
+    box.append(b);
+  }
+  showScreen('storyHome');
+}
+let curChapter = 'ch1';
+function openChapter(id) {
+  toMenuState();
+  curChapter = id;
+  const c = CHAPTERS[id], seen = save.endings || [], keys = Object.keys(c.endings);
+  $('chNo').textContent = `📖 스토리 모드 · 제${c.no}장${c.route ? ' · ' + c.route : ''}`;
+  $('chTitle').textContent = c.title;
+  $('chSub').textContent = c.sub;
+  $('chIntro').textContent = fmt(c.intro);
   const list = $('endingList');
   list.innerHTML = '';
-  for (const id of ENDING_ORDER) {
-    const e = ENDINGS[id], got = seen.includes(id), li = document.createElement('li');
+  for (const k of keys) {
+    const e = c.endings[k], got = seen.includes(k), li = document.createElement('li');
     li.textContent = got ? `${e.no}. ${e.icon} ${e.title}` : `${e.no}. ${e.hidden ? '??? (히든 엔딩)' : '???'}`;
     if (!got) li.className = 'locked';
     list.append(li);
   }
-  $('edTotal').textContent = `${seen.length} / ${ENDING_ORDER.length}`;
-  $('stCont').classList.toggle('hidden', !(save.story && save.story.node));
-  showScreen('storyHome');
+  $('edTotal').textContent = `${keys.filter(k => seen.includes(k)).length} / ${keys.length}`;
+  $('stCont').classList.toggle('hidden', !(save.story && save.story.node && (save.story.ch || 'ch1') === id));
+  showScreen('chapterCard');
 }
-function storyStart(resume) {
+function storyStart(id, resume) {
   A.init();
-  story = resume && save.story && save.story.node ? save.story : { node: 'c1', flags: {}, rank: 0, round: 0 };
+  const c = CHAPTERS[id];
+  if (resume && save.story && save.story.node && (save.story.ch || 'ch1') === id) {
+    story = save.story; story.ch = id;
+  } else {
+    const flags = c.startFlags ? c.startFlags() : {};
+    story = { ch: id, node: c.start, flags, rank: flags.ace ? 1 : 0, round: 0 };
+  }
   goNode(story.node);
 }
 function goNode(id) {
-  if (id === 'final') id = judge(story.flags);
-  if (ENDINGS[id]) return showEnding(id);
-  const n = NODES[id];
+  const c = CHP();
+  if (id === 'final') id = c.judge(story.flags);
+  if (c.endings[id]) return showEnding(id);
+  const n = c.nodes[id];
   story.node = id; save.story = story; persist();
   if (n.round) return showRoundCard(n);
   if (n.set) Object.assign(story.flags, n.set);
@@ -2611,7 +3079,7 @@ function goNode(id) {
 function playDialog(lines, choices, onDone) {
   state = 'story';
   dlg = { lines, i: -1, who: '', full: '', chars: 0, choices, onDone, choosing: false, sel: 0 };
-  $('dlgRank').textContent = `📛 ${RANKS[story.rank]} · ${save.nick}`;
+  $('dlgRank').textContent = `📛 ${CHP().ranks[story.rank]} · ${save.nick}`;
   showScreen('dialog');
   if (A.ctx && (A.song !== STORY_SONG || !A.timer)) { A.tempo = 1; A.startMusic(STORY_SONG); }
   nextLine();
@@ -2700,7 +3168,7 @@ function showRoundCard(n) {
   pendingRound = n;
   sceneKind = def.scene;
   state = 'story';
-  $('rcRound').textContent = `ROUND ${story.round} · 현재 직급: ${RANKS[story.rank]}`;
+  $('rcRound').textContent = `ROUND ${story.round} · 현재 직급: ${CHP().ranks[story.rank]}`;
   $('rcIcon').textContent = def.icon;
   $('rcTitle').textContent = def.title;
   $('rcDesc').textContent = typeof def.desc === 'function' ? def.desc(story.flags) : def.desc;
@@ -2711,7 +3179,8 @@ function showRoundCard(n) {
 function startRound() {
   if (!pendingRound) return;
   A.init();
-  if (MINI[pendingRound.round].dodge) startStoryDodge(); else startMini(pendingRound.round);
+  const def = MINI[pendingRound.round];
+  if (def.dodge) startStoryDodge(def); else startMini(pendingRound.round);
 }
 function startMini(type) {
   const def = MINI[type];
@@ -2745,16 +3214,17 @@ function updateMini(dt) {
 function miniPress(dir) {
   if (state === 'mini' && mini && !mini.done && mini.m.t >= 0 && mini.def.press) mini.def.press(mini.m, dir);
 }
-function startStoryDodge() {
+function startStoryDodge(def) {
   storyPrev = { map, char };
   map = MAPS[0]; char = charById('newbie');
   reset(); buildBg();
-  storyRun = { goal: 30 };
+  const goal = def.goal(story.flags);
+  storyRun = { goal };
   nextCeoAt = Infinity;
   state = 'play';
   for (const s of SCREENS) $(s).classList.add('hidden');
   $('hud').classList.add('playing');
-  setText('mapLbl', '🌙 야근 버티기 · 30초 목표');
+  setText('mapLbl', `${def.icon} ${def.title} · ${goal}초 목표`);
   A.tempo = 1; A.startMusic(map.song);
 }
 function restoreStoryDodge() {
@@ -2775,13 +3245,13 @@ function finishRound(win, reason) {
   const n = pendingRound;
   state = 'story'; mini = null;
   A.stopMusic();
-  const from = RANKS[story.rank];
-  if (win) story.rank = Math.min(RANKS.length - 1, story.rank + 1);
+  const from = CHP().ranks[story.rank];
+  if (win) story.rank = Math.min(CHP().ranks.length - 1, story.rank + 1);
   save.story = story; persist();
   $('rsIcon').textContent = win ? '🎉' : '💥';
   $('rsTitle').textContent = win ? '라운드 클리어!' : '라운드 실패…';
   $('rsBody').textContent = win
-    ? (from === RANKS[story.rank] ? `📛 ${from} 유지` : `📛 진급! ${from} ▶ ${RANKS[story.rank]}`)
+    ? (from === CHP().ranks[story.rank] ? `📛 ${from} 유지` : `📛 진급! ${from} ▶ ${CHP().ranks[story.rank]}`)
     : (reason || '아쉽지만 실패…');
   $('rsSub').textContent = win ? '다음 이야기로 넘어가요' : '실패해도 이야기는 계속돼요… 아마도?';
   pendingNext = win ? n.win : n.lose;
@@ -2796,24 +3266,37 @@ function goNext() {
   goNode(next);
 }
 function showEnding(id) {
-  const e = ENDINGS[id];
+  const c = CHP(), e = c.endings[id], keys = Object.keys(c.endings);
+  const before = CH_ORDER.filter(k => chUnlocked(CHAPTERS[k]));
   story.node = null; save.story = null;
   const seen = save.endings = save.endings || [];
   const isNew = !seen.includes(id);
   if (isNew) seen.push(id);
   persist();
+  const newly = CH_ORDER.filter(k => !before.includes(k) && chUnlocked(CHAPTERS[k])).map(k => CHAPTERS[k]);
+  const leads = CH_ORDER.map(k => CHAPTERS[k]).filter(ch => ch.unlock && ch.unlock.includes(id));
   sceneKind = e.scene;
   playDialog(e.lines, null, () => {
     state = 'story';
     A.stopMusic();
-    $('edNo').textContent = `ENDING #${e.no}${isNew ? ' · 🆕 새 엔딩!' : ''}`;
+    $('edNo').textContent = `${c.title} · ENDING #${e.no}${isNew ? ' · 🆕 새 엔딩!' : ''}`;
     $('edIcon').textContent = e.icon;
     $('edTitle').textContent = e.title;
     $('edText').textContent = fmt(e.text);
-    $('edRank').textContent = `최종 직급: ${e.rank || RANKS[story.rank]}`;
-    $('edCount').textContent = `📚 엔딩 수집 ${seen.length} / ${ENDING_ORDER.length}`;
+    $('edRank').textContent = `최종 직급: ${e.rank || CHP().ranks[story.rank]}`;
+    $('edCount').textContent = `📚 엔딩 수집 ${keys.filter(k => seen.includes(k)).length} / ${keys.length}`;
+    const ch = newly[0] || leads[0];
+    const um = $('edUnlock');
+    if (ch) {
+      um.textContent = (newly.length ? '🔓 새 이야기 해금! ' : '➡ 이어지는 이야기: ') + `제${ch.no}장 「${ch.title}」` + (ch.ready ? '' : ' (준비 중)');
+      um.classList.remove('hidden');
+    } else if (c.no >= 2) {
+      um.textContent = '➡ 다음 장은 준비 중이에요!';
+      um.classList.remove('hidden');
+    } else um.classList.add('hidden');
     showScreen('endingCard');
     A.play(e.good ? 'unlock' : 'over');
+    if (newly.length) setTimeout(() => A.play('unlock'), 700);
   });
 }
 
@@ -2884,11 +3367,12 @@ window.addEventListener('keydown', e => {
       } else if (k === 'Enter' || k === ' ') advanceDialog();
     } else if (visible('roundCard') && (k === 'Enter' || k === ' ')) startRound();
     else if (visible('resultCard') && (k === 'Enter' || k === ' ')) goNext();
-    else if (visible('endingCard') && k === 'Escape') openStoryHome();
+    else if (visible('endingCard') && k === 'Escape') openChapter(story.ch);
   } else if (state === 'play') {
     if (k === 'ArrowLeft' || k === 'ArrowRight') mash();
   } else if (state === 'menu') {
     if (visible('storyHome') && k === 'Escape') { openHome(); return; }
+    if (visible('chapterCard') && k === 'Escape') { openStoryHome(); return; }
     if (visible('home') && (k === 'Enter' || k === ' ')) { A.play('click'); openMapSelect(); }
     else if (visible('mapsel')) {
       if (k === 'Enter' || k === ' ') startGame();
@@ -2936,15 +3420,16 @@ $('homeBtn').addEventListener('click', () => { A.play('click'); openHome(); });
 $('muteBtn').addEventListener('click', e => { e.stopPropagation(); A.init(); A.setMuted(!save.muted); refreshMute(); });
 
 $('goStory').addEventListener('click', () => { A.play('click'); openStoryHome(); });
-$('stNew').addEventListener('click', () => { A.play('click'); storyStart(false); });
-$('stCont').addEventListener('click', () => { A.play('click'); storyStart(true); });
+$('stNew').addEventListener('click', () => { A.play('click'); storyStart(curChapter, false); });
+$('stCont').addEventListener('click', () => { A.play('click'); storyStart(curChapter, true); });
+$('chBack').addEventListener('click', () => { A.play('click'); openStoryHome(); });
 $('stBack').addEventListener('click', () => { A.play('click'); openHome(); });
 $('dialog').addEventListener('click', advanceDialog);
 $('dlgSkip').addEventListener('click', e => { e.stopPropagation(); skipDialog(); });
 $('rcStart').addEventListener('click', startRound);
 $('rsNext').addEventListener('click', goNext);
-$('edRetry').addEventListener('click', () => { A.play('click'); storyStart(false); });
-$('edMenu').addEventListener('click', () => { A.play('click'); openStoryHome(); });
+$('edRetry').addEventListener('click', () => { A.play('click'); storyStart(story.ch, false); });
+$('edMenu').addEventListener('click', () => { A.play('click'); openChapter(story.ch); });
 canvas.addEventListener('mousedown', e => {
   if (state !== 'mini') return;
   const r = canvas.getBoundingClientRect();
