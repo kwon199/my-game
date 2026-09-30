@@ -166,6 +166,30 @@
   .comment { font-size: 15px; margin: 8px 0 2px; }
   .unlock { margin: 8px 0 0; padding: 7px; border: 3px solid var(--line); background: #f2c230; color: #1a1a2e; font-size: 14px; }
   .sub-title { font-size: 13px; text-align: left; margin: 12px 0 6px; }
+
+  /* 스토리 모드 */
+  .pbtn.story { background: #8a4fd8; }
+  .dialog { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; padding: 12px; cursor: pointer; }
+  .dlg-top { position: absolute; top: 8px; left: 8px; right: 84px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  #dlgSkip { cursor: pointer; font-family: inherit; }
+  .dlg-box { position: relative; display: flex; gap: 10px; align-items: flex-start; background: var(--paper); color: var(--ink); border: 4px solid var(--line); box-shadow: 6px 6px 0 rgba(0,0,0,.5); padding: 12px; min-height: 118px; }
+  .dlg-box canvas { width: 72px; height: 78px; image-rendering: pixelated; flex: none; background: #cfe0f5; border: 2px solid var(--line); }
+  .dlg-body { flex: 1; min-width: 0; }
+  .dlg-name { font-size: 13px; color: var(--blue); margin-bottom: 4px; }
+  .dlg-text { font-size: 16px; line-height: 1.55; word-break: keep-all; padding-bottom: 12px; }
+  .dlg-text.narr { color: var(--muted); }
+  .dlg-next { position: absolute; right: 10px; bottom: 6px; font-size: 12px; animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .dlg-choices { display: flex; flex-direction: column; gap: 8px; }
+  .choice { font-family: inherit; font-size: 15px; text-align: left; padding: 12px 14px; background: var(--paper); color: var(--ink); border: 3px solid var(--line); box-shadow: 3px 3px 0 var(--line); cursor: pointer; }
+  .choice.on { background: #f2c230; color: #1a1a2e; }
+  .rc-icon { font-size: 44px; margin: 4px 0; }
+  .rc-desc { font-size: 14px; line-height: 1.6; word-break: keep-all; margin: 8px 0; }
+  .big-rank { font-size: 20px; margin: 10px 0; color: #d4a017; word-break: keep-all; }
+  .endings { list-style: none; padding: 0; margin: 6px 0 4px; text-align: left; border: 3px solid var(--line); background: var(--paper2); }
+  .endings li { padding: 6px 10px; font-size: 13px; border-bottom: 2px dashed rgba(128,128,128,.35); }
+  .endings li:last-child { border-bottom: 0; }
+  .endings li.locked { color: var(--muted); }
 </style>
 </head>
 <body>
@@ -194,7 +218,8 @@
           <div class="rk" id="badgeChar"></div>
         </div>
       </div>
-      <button id="goMaps" class="pbtn wide">출근하기 ▶</button>
+      <button id="goStory" class="pbtn wide story">📖 스토리 모드 · 인턴의 수난시대</button>
+      <button id="goMaps" class="pbtn wide">⚡ 무한 모드 출근하기 ▶</button>
       <div class="btns">
         <button id="goRank" class="pbtn alt">🏆 랭킹</button>
         <button id="goId" class="pbtn alt">✏️ 사원증 수정</button>
@@ -264,6 +289,67 @@
       <div class="btns">
         <button id="retryBtn" class="pbtn">다시 하기</button>
         <button id="homeBtn" class="pbtn alt">홈으로</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 스토리 모드 -->
+  <div id="storyHome" class="overlay hidden">
+    <div class="card">
+      <div class="muted">📖 스토리 모드 · 제1장</div>
+      <div class="logo" style="font-size:28px">인턴의 수난시대</div>
+      <p class="sub">정직원 될 수 있을까?</p>
+      <p class="rc-desc">대박무역(주) 인턴이 되어 정직원 전환에 도전하세요! 대화 속 선택과 미니게임 결과에 따라 이야기가 갈라지고, 라운드를 깰 때마다 진급해요. 스토리 모드에선 캐릭터가 <b>인턴</b>으로 고정돼요.</p>
+      <div class="sub-title">📚 엔딩 도감 <span id="edTotal"></span></div>
+      <ul class="endings" id="endingList"></ul>
+      <button id="stCont" class="pbtn wide hidden">▶ 이어하기</button>
+      <button id="stNew" class="pbtn wide story">처음부터 시작 ▶</button>
+      <button id="stBack" class="pbtn alt wide">← 홈</button>
+    </div>
+  </div>
+
+  <div id="dialog" class="dialog hidden">
+    <div class="dlg-top"><span class="pill" id="dlgRank"></span><button class="pill" id="dlgSkip">건너뛰기 ▶▶</button></div>
+    <div class="dlg-choices hidden" id="dlgChoices"></div>
+    <div class="dlg-box" id="dlgBox">
+      <canvas id="dlgFace" width="24" height="26"></canvas>
+      <div class="dlg-body"><div class="dlg-name" id="dlgName"></div><div class="dlg-text" id="dlgText"></div></div>
+      <div class="dlg-next" id="dlgNext">▼</div>
+    </div>
+  </div>
+
+  <div id="roundCard" class="overlay hidden">
+    <div class="card">
+      <div class="muted" id="rcRound"></div>
+      <div class="rc-icon" id="rcIcon"></div>
+      <div class="screen-title" id="rcTitle"></div>
+      <p class="rc-desc" id="rcDesc"></p>
+      <p class="muted" id="rcCtrl"></p>
+      <button id="rcStart" class="pbtn wide">시작! ▶</button>
+    </div>
+  </div>
+
+  <div id="resultCard" class="overlay hidden">
+    <div class="card">
+      <div class="rc-icon" id="rsIcon"></div>
+      <div class="screen-title" id="rsTitle"></div>
+      <p class="big-rank" id="rsBody"></p>
+      <p class="muted" id="rsSub"></p>
+      <button id="rsNext" class="pbtn wide">계속 ▶</button>
+    </div>
+  </div>
+
+  <div id="endingCard" class="overlay hidden">
+    <div class="card">
+      <div class="muted" id="edNo"></div>
+      <div class="rc-icon" id="edIcon"></div>
+      <div class="screen-title" id="edTitle"></div>
+      <p class="rc-desc" id="edText"></p>
+      <p class="big-rank" id="edRank"></p>
+      <p class="muted" id="edCount"></p>
+      <div class="btns">
+        <button id="edRetry" class="pbtn story">처음부터 다시</button>
+        <button id="edMenu" class="pbtn alt">스토리 메뉴</button>
       </div>
     </div>
   </div>
@@ -795,6 +881,7 @@ const A = {
         break;
       }
       case 'boom': this.hiss(t, .7, .6, 150); this.tone(110, t, .6, 'sine', 1, this.sfx, 30); break;
+      case 'talk': this.tone(520 + Math.random() * 160, t, .03, 'square', .04); break;
       case 'over':
         [[72, 0, .16], [67, .18, .16], [64, .36, .16], [60, .54, .6]].forEach(([n, d, len]) => this.tone(mtof(n), t + d, len, 'square', .28));
         this.tone(mtof(48), t + .54, .6, 'triangle', .5);
@@ -905,6 +992,7 @@ function resize() {
   LW = Math.ceil(W / S); LH = Math.ceil(H / S);
   loBg.width = loFg.width = LW; loBg.height = loFg.height = LH;
   buildBg();
+  sceneCache = {};
   if (player) { player.y = LH - 4; player.x = Math.min(player.x, LW - 8); }
 }
 
@@ -1010,9 +1098,11 @@ function update(dt) {
   particles = particles.filter(p => p.life > 0);
   floaters = floaters.filter(f => f.life > 0);
 
+  if (state === 'story') { updateDialog(dt); return; }
+  if (state === 'mini') { updateMini(dt); return; }
   if (state === 'dying') {
     dieT += dt;
-    if (dieT > .9) startEnding();
+    if (dieT > .9) { if (storyRun) endStoryDodge(false); else startEnding(); }
     return;
   }
   if (state === 'ending') {
@@ -1034,6 +1124,7 @@ function update(dt) {
   if (state !== 'play') return;
 
   elapsed += dt;
+  if (storyRun && elapsed >= storyRun.goal) { endStoryDodge(true); return; }
   A.tempo = (1 + Math.min(elapsed, 120) / 240) * (chase.phase === 'idle' ? 1 : 1.12) * (bf ? 1.15 : 1);
   if (Math.floor(elapsed / 30) > level) {
     level = Math.floor(elapsed / 30);
@@ -1386,6 +1477,7 @@ function render() {
   ctx.imageSmoothingEnabled = false;
 
   if (state === 'over') { drawBoardBg(); return; }
+  if (state === 'story' || state === 'mini') { renderStory(); return; }
 
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   ctx.save();
@@ -1598,16 +1690,18 @@ function loop(now) {
 }
 
 // ================= 화면 전환 =================
-const SCREENS = ['home', 'idcard', 'mapsel', 'rank', 'over'];
+const SCREENS = ['home', 'idcard', 'mapsel', 'rank', 'over', 'storyHome', 'dialog', 'roundCard', 'resultCard', 'endingCard'];
 function showScreen(id) {
   for (const s of SCREENS) $(s).classList.toggle('hidden', s !== id);
   const card = $(id).querySelector('.card');
-  card.classList.remove('pop'); void card.offsetWidth; card.classList.add('pop');
+  if (card) { card.classList.remove('pop'); void card.offsetWidth; card.classList.add('pop'); }
 }
 const money = v => (v < 0 ? '−' : '') + (map.cur === 'USD' ? '$' + Math.round(Math.abs(v)).toLocaleString('en-US') : Math.round(Math.abs(v)).toLocaleString('ko-KR') + '원');
 const drawCharPreview = (cv, c) => { const g = cv.getContext('2d'); g.clearRect(0, 0, cv.width, cv.height); g.drawImage(SPRITES[c.id].R[0], 0, 0); };
 
 function toMenuState() {
+  dlg = null; mini = null;
+  restoreStoryDodge();
   if (state !== 'menu') { state = 'menu'; A.stopMusic(); reset(); }
   $('hud').classList.remove('playing');
 }
@@ -1826,6 +1920,943 @@ async function showBoard() {
   renderRankList($('overRank'), res.list, entry, 5);
 }
 
+// ================= 스토리 모드: 인턴의 수난시대 =================
+const RANKS = ['취준생', '인턴', '수습 인턴', '프로 인턴', '에이스 인턴', '정직원 후보'];
+const STORY_SONG = {
+  bpm: 92,
+  mel: [67, 0, 72, 0, 76, 0, 74, 72, 69, 0, 72, 0, 74, 0, 72, 0, 65, 0, 69, 0, 72, 0, 71, 69, 67, 0, 71, 0, 74, 0, 0, 0],
+  roots: [36, 33, 29, 31], bass: [0, null, null, null, 7, null, null, null],
+  kick: [0], snare: [4], hat: [2, 6],
+};
+const pick = a => a[Math.random() * a.length | 0];
+const shuffle = a => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [b[i], b[j]] = [b[j], b[i]]; } return b; };
+const fmt = str => str.replace(/\{nick\}/g, save.nick || '인턴');
+
+// 등장인물 초상화
+function drawBust(g, x, top, o, open) {
+  const R = rect(g);
+  R(x - 6, top + 9, 12, 8, '#1a1a2e'); R(x - 5, top + 10, 10, 7, o.suit);
+  if (o.shirt) R(x - 1, top + 10, 2, 2, '#f4f4f4');
+  if (o.tie) R(x - 1, top + 11, 2, 4, o.tie);
+  if (o.collar) R(x - 3, top + 10, 6, 1, o.collar);
+  if (o.lanyard) { R(x - 3, top + 10, 1, 3, '#2f6fed'); R(x + 2, top + 10, 1, 3, '#2f6fed'); R(x - 2, top + 13, 4, 3, '#f4f4f4'); }
+  R(x - 5, top, 10, 10, '#1a1a2e'); R(x - 4, top + 1, 8, 8, '#f2c29b');
+  const H = o.hair;
+  if (o.style === 'short') { R(x - 4, top + 1, 8, 2, H); R(x - 4, top + 3, 1, 2, H); R(x + 3, top + 3, 1, 2, H); }
+  if (o.style === 'perm') { R(x - 6, top - 1, 12, 3, H); R(x - 6, top + 2, 2, 6, H); R(x + 4, top + 2, 2, 6, H); R(x - 5, top - 2, 2, 1, H); R(x + 1, top - 2, 3, 1, H); }
+  if (o.style === 'bob') { R(x - 5, top - 1, 10, 4, H); R(x - 5, top + 3, 2, 6, H); R(x + 3, top + 3, 2, 6, H); }
+  if (o.style === 'slick') { R(x - 4, top, 8, 2, H); R(x - 4, top + 2, 1, 2, H); R(x + 3, top + 2, 1, 2, H); }
+  if (o.headband) { R(x - 5, top + 2, 10, 2, '#d83a3a'); R(x - 1, top + 2, 2, 2, '#f4f4f4'); }
+  if (o.glasses) { R(x - 3, top + 4, 3, 2, '#1a1a2e'); R(x + 1, top + 4, 3, 2, '#1a1a2e'); R(x - 2, top + 4, 1, 1, '#9fd8ff'); R(x + 2, top + 4, 1, 1, '#9fd8ff'); }
+  else { R(x - 2, top + 5, 1, 1, '#1a1a2e'); R(x + 1, top + 5, 1, 1, '#1a1a2e'); }
+  if (o.brows) { R(x - 3, top + 4, 2, 1, '#1a1a2e'); R(x + 1, top + 4, 2, 1, '#1a1a2e'); }
+  if (o.blush) { R(x - 3, top + 6, 1, 1, '#f08a9a'); R(x + 2, top + 6, 1, 1, '#f08a9a'); }
+  if (o.mustache) R(x - 2, top + 6, 4, 1, o.mustache);
+  const lip = o.lip || '#6b1d1d';
+  if (open) R(x - 1, top + 7, 3, 2, lip); else R(x - 1, top + 7, 2, 1, lip);
+}
+const LOOKS = {
+  me: { style: 'short', hair: '#2b2118', suit: '#8e97aa', lanyard: true },
+  mom: { style: 'perm', hair: '#5a3a2a', suit: '#e07a9a', collar: '#f4f4f4', blush: true, lip: '#c0395a' },
+  park: { style: 'short', hair: '#6b4a2e', suit: '#2e3f73', shirt: true, tie: '#d83a3a' },
+  lee: { style: 'bob', hair: '#1a1a2e', suit: '#4a4a5a', shirt: true, glasses: true, lip: '#b0405a' },
+  choi: { style: 'slick', hair: '#c9c9d1', suit: '#1c1c22', shirt: true, tie: '#e2b43c', mustache: '#c9c9d1' },
+  kang: { style: 'short', hair: '#1a1a1a', suit: '#3d6b3d', headband: true, brows: true },
+};
+const PEOPLE = {
+  me: { name: () => `${save.nick} (나)` }, mom: { name: '엄마' }, kim: { name: '김부장' },
+  park: { name: '박대리 · 사수' }, lee: { name: '이과장 · 인사팀' }, choi: { name: '최사장 · 거래처' },
+  kang: { name: '강위원장 · 노조' }, ceo: { name: '사장님' },
+};
+const PORTRAITS = {};
+for (const k in LOOKS) {
+  PORTRAITS[k] = {
+    closed: outlined(bake(16, 20, g => drawBust(g, 8, 1, LOOKS[k], false))),
+    open: outlined(bake(16, 20, g => drawBust(g, 8, 1, LOOKS[k], true))),
+  };
+}
+PORTRAITS.kim = FACES.trade;
+PORTRAITS.ceo = { closed: CEO.closed, open: CEO.open };
+
+// 스토리 전용 배경
+function bgRoom(g, w, h) {
+  const R = rect(g), ft = h - 20, y0 = Math.max(12, ft - 92);
+  R(0, 0, w, ft, '#3b3552');
+  for (let x = 6; x < w; x += 12) R(x, 0, 1, ft, '#443d5e');
+  const wx = (w >> 1) - 16, wy = y0 + 4;
+  R(wx - 2, wy - 2, 36, 30, '#2a2440'); R(wx, wy, 32, 26, '#141a33');
+  R(wx + 22, wy + 5, 5, 5, '#fff3c4'); R(wx + 21, wy + 5, 2, 2, '#141a33');
+  R(wx + 5, wy + 8, 1, 1, '#fff'); R(wx + 11, wy + 17, 1, 1, '#fff'); R(wx + 26, wy + 20, 1, 1, '#fff');
+  R(wx + 15, wy, 2, 26, '#2a2440');
+  R(wx - 7, wy - 3, 5, 32, '#b04a5a'); R(wx + 34, wy - 3, 5, 32, '#b04a5a');
+  R(8, y0 + 10, 16, 22, '#efe6c8'); R(10, y0 + 13, 12, 3, '#d83a3a');
+  for (const y of [19, 22, 25]) R(11, y0 + y, y === 25 ? 7 : 10, 1, '#1a1a2e');
+  R(w - 26, y0 + 8, 18, 16, '#f4f4f4'); R(w - 26, y0 + 8, 18, 4, '#d83a3a');
+  for (let i = 0; i < 7; i++) R(w - 24 + (i % 4) * 4, y0 + 14 + (i >> 2) * 4, 2, 2, '#d83a3a');
+  R(2, ft - 12, 34, 12, '#6b4a2e'); R(3, ft - 16, 32, 5, '#4f6fb0'); R(3, ft - 18, 10, 4, '#f4f4f4'); R(2, ft - 22, 3, 22, '#6b4a2e');
+  const dx = w - 46;
+  R(dx, ft - 14, 42, 3, '#8a5a34'); R(dx + 2, ft - 11, 3, 11, '#6b4526'); R(dx + 37, ft - 11, 3, 11, '#6b4526');
+  R(dx + 12, ft - 25, 16, 11, '#9aa3b5'); R(dx + 13, ft - 24, 14, 8, '#bfe3ff');
+  R(dx + 14, ft - 22, 10, 1, '#6b7385'); R(dx + 14, ft - 20, 8, 1, '#6b7385'); R(dx + 10, ft - 15, 20, 1, '#6b7385');
+  g.drawImage(SPR.ramen, dx + 31, ft - 25);
+  R(0, ft, w, h - ft, '#6b5a48');
+  for (let y = ft + 4; y < h; y += 5) R(0, y, w, 1, '#5e4f3f');
+  R(0, ft, w, 1, '#2a2440');
+  return { ft };
+}
+function bgMeeting(g, w, h) {
+  const R = rect(g), ft = h - 20, y0 = Math.max(14, ft - 100);
+  R(0, 0, w, ft, '#d9dde3');
+  for (let x = 0; x < w; x += 20) R(x, 8, 1, ft - 8, '#c9ced6');
+  R(0, 0, w, 7, '#f4f6f8'); R(0, 7, w, 1, '#aab2bd');
+  const sx = (w * .15) | 0, sw = (w * .7) | 0, sy = y0, sh = 44;
+  R(sx - 2, sy - 3, sw + 4, 3, '#555'); R(sx, sy, sw, sh, '#ffffff'); R(sx, sy + sh, sw, 2, '#aab2bd');
+  R(sx + 4, sy + 4, (sw * .5) | 0, 3, '#1a1a2e');
+  const bw = ((sw - 12) / 6) | 0;
+  [10, 16, 12, 22, 28, 34].forEach((bh, i) => R(sx + 6 + i * bw, sy + sh - 4 - bh, bw - 3, bh, i === 5 ? '#d83a3a' : '#4c7eac'));
+  R(w - 14, ft - 10, 8, 10, '#8a4a24'); R(w - 13, ft - 18, 3, 8, '#3d7a35'); R(w - 16, ft - 15, 3, 4, '#4f9a44'); R(w - 9, ft - 16, 3, 5, '#4f9a44');
+  for (let x = 6; x < w - 20; x += 22) R(x, ft - 18, 10, 8, '#2a2f3d');
+  R(0, ft - 10, w, 3, '#8a5a34'); R(0, ft - 7, w, 7, '#6b4526');
+  R(0, ft, w, h - ft, '#4a5568');
+  for (let y = ft + 3; y < h; y += 6) for (let x = ((y - ft) / 6 % 2) * 6 | 0; x < w; x += 12) R(x, y, 2, 2, '#56627a');
+  R(0, ft, w, 1, '#2a2f3d');
+  return { ft };
+}
+function bgWork(g, w, h) {
+  const lay = bgTrade(g, w, h), R = rect(g), ft = lay.ft;
+  R(0, ft - 26, w, 26, '#8d7f5b'); R(0, ft - 26, w, 2, '#6c6045');
+  for (let x = 0; x < w; x += 10) R(x, ft - 24, 1, 24, '#7f7250');
+  return lay;
+}
+const SCENES = { room: bgRoom, office: bgTrade, work: bgWork, meeting: bgMeeting };
+let sceneCache = {}, sceneKind = 'office';
+function scene(kind) {
+  const key = kind + LW + 'x' + LH;
+  if (!sceneCache[key]) {
+    let lay;
+    const cv = bake(LW, LH, g => { lay = SCENES[kind](g, LW, LH); });
+    sceneCache[key] = { cv, lay };
+  }
+  return sceneCache[key];
+}
+
+// ---------- 미니게임 공통 ----------
+function moveRunner(m, dt, speed) {
+  const dir = (keys.right || touch.right ? 1 : 0) - (keys.left || touch.left ? 1 : 0);
+  m.moving = dir !== 0;
+  if (dir) m.face = dir;
+  m.x = Math.max(7, Math.min(LW - 7, m.x + dir * LW * speed * dt));
+}
+function drawRunnerAt(g, x, face, moving, t) {
+  const spr = SPRITES.newbie, f = moving ? (t * 12 | 0) % 4 : 0;
+  g.drawImage((face > 0 ? spr.R : spr.L)[f], Math.round(x) - 13, LH - 4 - 28);
+}
+function topBar(label, ratio, right, color, mark = null) {
+  const x = 12, y = 58, w = W - 24, h = 14;
+  text(label, x, y - 12, 13, '#ffffff', 'left');
+  if (right) text(right, x + w, y - 12, 13, '#ffffff', 'right');
+  ctx.fillStyle = '#1a1a2e'; ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
+  ctx.fillStyle = '#3a3f4d'; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = color; ctx.fillRect(x, y, w * Math.max(0, Math.min(1, ratio)), h);
+  if (mark !== null) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x + w * mark - 1, y - 4, 3, h + 8); }
+}
+function wrapText(str, maxW) {
+  const out = [];
+  let line = '';
+  for (const ch of [...str]) {
+    const test = line + ch;
+    if (ctx.measureText(test).width > maxW && line) {
+      const sp = line.lastIndexOf(' ');
+      if (sp > 0 && ch !== ' ') { out.push(line.slice(0, sp)); line = line.slice(sp + 1) + ch; }
+      else { out.push(line); line = ch === ' ' ? '' : ch; }
+    } else line = test;
+  }
+  if (line) out.push(line);
+  return out;
+}
+function textBox(str, x, y, w, size, color, bg = '#fff8e6') {
+  ctx.font = `${size}px ${FONT}`;
+  const lines = wrapText(str, w - 20), lh = size * 1.4, h = lines.length * lh + 16;
+  ctx.fillStyle = '#1a1a2e'; ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
+  ctx.fillStyle = bg; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  lines.forEach((l, i) => ctx.fillText(l, x + w / 2, y + 8 + lh * (i + .5)));
+  return h;
+}
+const wordSize = () => Math.max(12, Math.round(S * 3.6));
+function wordBox(str, x, y, good) {
+  ctx.font = `${wordSize()}px ${FONT}`;
+  const w = ctx.measureText(str).width + 12, h = wordSize() + 10;
+  ctx.fillStyle = '#1a1a2e'; ctx.fillRect(x - w / 2 - 2, y - h / 2 - 2, w + 4, h + 4);
+  ctx.fillStyle = good ? '#eafff1' : '#ffecec'; ctx.fillRect(x - w / 2, y - h / 2, w, h);
+  ctx.fillStyle = good ? '#1f8a4c' : '#d83a3a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(str, x, y + 1);
+}
+function drawArrow(g, x, y, lane, color) {
+  const R = rect(g);
+  x = Math.round(x); y = Math.round(y);
+  for (let i = 0; i < 6; i++) R(lane === 0 ? x - 3 + i : x + 2 - i, y - i - 1, 1, 2 * i + 3, '#1a1a2e');
+  for (let i = 0; i < 5; i++) R(lane === 0 ? x - 2 + i : x + 1 - i, y - i, 1, 2 * i + 1, color);
+}
+function drawUnionRep(g, x, y, t, loud) {
+  const R = rect(g);
+  x = Math.round(x);
+  R(x - 4, y - 8, 3, 7, '#2a2f3d'); R(x + 1, y - 8, 3, 7, '#2a2f3d'); R(x - 6, y - 1, 4, 1, '#111'); R(x, y - 1, 4, 1, '#111');
+  drawBust(g, x, y - 25, LOOKS.kang, loud && (t * 8 | 0) % 2);
+  R(x + 5, y - 14, 7, 2, LOOKS.kang.suit); R(x + 11, y - 14, 2, 2, '#f2c29b');
+}
+
+const ESSAY_GOOD = ['열정', '성장', '협업', '책임감', '도전 정신', '데이터 분석', '글로벌 역량', '주도적', '소통 능력', '끈기', '문제 해결'];
+const ESSAY_BAD = ['칼퇴 필수', '회사 이름 틀림', 'ㅋㅋㅋㅋ', '아무거나 할게요', '맞춤법 틀림', '연봉만 봄', '엄마가 가래요', '복붙 흔적'];
+const TASK_NAMES = ['견적서', '선적 서류', '수출 계약서', '부장님 심부름'];
+const MEET_Q = [
+  { q: '우리 회사 새 로고, 내가 직접 그렸는데 어떤가?', a: ['와… 예술이네요! 최고입니다!', '색감만 조금 바꾸면 더 살 것 같아요'] },
+  { q: '납기를 2주 당겨줄 수 있겠나?', a: ['네! 무조건 됩니다!', '확인해 보고 가능한 일정을 드릴게요'] },
+  { q: '단가를 10% 깎아주면 바로 계약하지.', a: ['바로 깎아드리겠습니다!', '물량을 늘려 주시면 검토해 볼게요'] },
+  { q: '경쟁사 제품이 더 싸던데?', a: ['저희가 무조건 더 좋습니다!', '품질·A/S 비교표를 보여드릴게요'] },
+  { q: '요즘 젊은 사람들은 회식 싫어한다며?', a: ['저는 회식 너무 좋아요!', '점심 회식이면 다들 좋아해요'] },
+  { q: '내 골프 실력이 프로급이라던데, 들었나?', a: ['업계에 소문이 자자합니다!', '다음에 한 수 배우고 싶어요'] },
+  { q: '자네 생각엔 이 계약, 우리한테 이득인가?', a: ['당연하죠! 최고의 조건입니다!', '장점과 리스크를 같이 말씀드릴게요'] },
+  { q: '우리 조카가 인턴 자리 찾던데…', a: ['제가 바로 꽂아드릴게요!', '공채 일정을 안내해 드릴게요'] },
+  { q: '커피 한잔 하겠나?', a: ['감사히 마시겠습니다!', '…(휴대폰만 본다)'], both: 0 },
+  { q: '명함은 챙겨 왔나?', a: ['여기 있습니다! (두 손으로)', '아… 책상에 두고 왔어요'], both: 0 },
+  { q: '자네, 우리 회사 제품 써 봤나?', a: ['네, 직접 써 보고 왔습니다!', '아뇨, 딱히 관심이…'], both: 0 },
+];
+const REACT_GOOD = ['허허, 마음에 드는구먼!', '오호, 그렇지!', '자네 말이 맞네!', '역시 요즘 젊은이야!'];
+const REACT_BAD = ['흠…', '그건 좀 아니지 않나?', '(표정이 굳었다)', '…김부장, 이 친구 괜찮나?'];
+const UNION_NONSENSE = ['인턴도 파업권 있다!', '구호 100번이면 정규직!', '가입비는 월급의 50%!', '점심은 노조 식당만!', '회의는 노래로 한다!', '금요일은 반차 의무!'];
+const UNION_REBUT = ['근거 규정 보여주세요!', '그건 불법이에요!', '녹음하고 있습니다!', '인사팀에 확인할게요!'];
+
+function meetAnswer(m, pickIdx) {
+  const q = m.qs[m.i];
+  let right = false;
+  if (pickIdx >= 0) {
+    const actual = m.swap ? 1 - pickIdx : pickIdx;
+    right = q.both !== undefined ? actual === q.both : actual === m.mode;
+  }
+  m.chosen = pickIdx; m.lastRight = right;
+  m.last = pickIdx < 0 ? '…(대답이 없군)' : pick(right ? REACT_GOOD : REACT_BAD);
+  if (right) { m.ok++; A.play('eat', 4); } else { m.bad++; A.play('ding'); shake = 4; }
+  m.phase = 'react'; m.react = 1.2;
+}
+
+const MINI = {
+  essay: {
+    title: '자기소개서 쓰기', icon: '📝', scene: 'room', song: () => ({ ...STORY_SONG, bpm: 128 }),
+    desc: f => (f.copy ? '복붙한 자소서라 좋은 문장이 술술 나와요(?) ' : '') + '떨어지는 초록 키워드는 받고, 빨간 망한 문장은 피하세요! 25초 안에 완성도 100%면 서류 합격!',
+    controls: '← → 이동 (휴대폰: 화면 좌우 터치)',
+    create: f => ({ dur: 25, gauge: 0, words: [], spawn: 0, x: LW / 2, face: 1, moving: false, good: f.copy ? .72 : .55, slow: f.copy ? .8 : 1 }),
+    update(m, dt) {
+      moveRunner(m, dt, .9);
+      m.spawn -= dt;
+      if (m.spawn <= 0) {
+        m.spawn = .55;
+        const good = Math.random() < m.good, str = pick(good ? ESSAY_GOOD : ESSAY_BAD);
+        ctx.font = `${wordSize()}px ${FONT}`;
+        const w = (ctx.measureText(str).width + 16) / S;
+        m.words.push({ text: str, good, w, x: w / 2 + 2 + Math.random() * Math.max(1, LW - w - 4), y: -8, vy: LH * (.17 + Math.random() * .08 + m.t * .004) * m.slow });
+      }
+      for (const wd of m.words) {
+        wd.y += wd.vy * dt;
+        if (!wd.dead && Math.abs(wd.x - m.x) < wd.w / 2 + 5 && wd.y > LH - 34 && wd.y < LH - 8) {
+          wd.dead = true;
+          if (wd.good) { m.gauge += 9; floatText(wd.x, wd.y - 6, '+9%', '#7dff9a'); burst(wd.x, wd.y, ['#7dff9a', '#ffffff'], 8); A.play('eat', 4); }
+          else { m.gauge = Math.max(0, m.gauge - 15); floatText(wd.x, wd.y - 6, '-15%', '#ff6b6b'); shake = 6; A.play('ding'); }
+        }
+      }
+      m.words = m.words.filter(wd => !wd.dead && wd.y < LH + 10);
+      if (m.gauge >= 100) return 'win';
+      if (m.t >= m.dur) { m.reason = `자소서 완성도 ${m.gauge | 0}%… 마감 시간 초과!`; return 'lose'; }
+    },
+    draw(m, g, t) { drawRunnerAt(g, m.x, m.face, m.moving, t); },
+    hud(m) {
+      for (const wd of m.words) wordBox(wd.text, wd.x * S, wd.y * S, wd.good);
+      topBar(`자소서 완성도 · ⏱ ${Math.max(0, m.dur - Math.max(0, m.t)).toFixed(1)}s`, m.gauge / 100, `${Math.min(100, m.gauge | 0)}%`, '#3ddc84');
+    },
+  },
+
+  project: {
+    title: '프로젝트 진행하기', icon: '🗂️', scene: 'work', song: () => MAPS[0].song,
+    desc: f => (f.team ? '박대리님이 가끔 도와줘요! ' : '혼자라서 업무가 4개예요! ') + '업무 게이지가 계속 줄어요. 책상 앞에 서 있으면 그 업무가 진행돼요. 25초 동안 하나도 펑크 내지 마세요!',
+    controls: '← → 책상 사이 이동',
+    create(f) {
+      const n = f.eager ? 4 : 3;
+      return {
+        dur: 25, n, x: LW / 2, face: 1, moving: false, help: !!f.team, helpT: 6, urgT: 3,
+        tasks: TASK_NAMES.slice(0, n).map((name, i) => ({ name, v: 75, x: LW * (i + .5) / n, rate: (f.eager ? 8 : 7) * (.85 + Math.random() * .3), urgent: 0 })),
+      };
+    },
+    update(m, dt) {
+      moveRunner(m, dt, 1.0);
+      const k = 1 + m.t / 35;
+      for (const tk of m.tasks) {
+        tk.urgent = Math.max(0, tk.urgent - dt);
+        const working = Math.abs(tk.x - m.x) < 9;
+        tk.v = Math.min(100, tk.v + (working ? 36 : -tk.rate * k * (tk.urgent > 0 ? 2.3 : 1)) * dt);
+        if (working && Math.random() < dt * 12) particles.push({ x: tk.x + (Math.random() - .5) * 8, y: LH - 40, vx: (Math.random() - .5) * 20, vy: -25, life: .4, c: '#8fd3ff', sz: 1 });
+        if (tk.v <= 0) { m.reason = `「${tk.name}」 일정 펑크!`; return 'lose'; }
+      }
+      m.urgT -= dt;
+      if (m.urgT <= 0) {
+        m.urgT = 3.2;
+        const tk = pick(m.tasks);
+        tk.urgent = 3; floatText(tk.x, LH - 62, '긴급!', '#ff4d5e'); A.play('warn');
+      }
+      if (m.help) {
+        m.helpT -= dt;
+        if (m.helpT <= 0) {
+          m.helpT = 6;
+          const tk = m.tasks.reduce((a, b) => (a.v < b.v ? a : b));
+          tk.v = Math.min(100, tk.v + 35); floatText(tk.x, LH - 70, '박대리 지원!', '#8fd3ff'); A.play('coin');
+        }
+      }
+      if (m.t >= m.dur) return 'win';
+    },
+    draw(m, g, t) {
+      const R = rect(g), ft = LH - 20;
+      for (const tk of m.tasks) {
+        const x = Math.round(tk.x);
+        R(x - 10, ft - 12, 20, 2, '#8a5a34'); R(x - 9, ft - 10, 18, 10, '#5a3a1f');
+        R(x - 5, ft - 21, 10, 8, '#1a1a2e'); R(x - 4, ft - 20, 8, 6, tk.urgent > 0 && (t * 8 | 0) % 2 ? '#ff4d5e' : '#8fd3ff');
+        R(x - 1, ft - 13, 2, 1, '#333'); R(x + 5, ft - 15, 4, 3, '#f4f4f4');
+      }
+      drawRunnerAt(g, m.x, m.face, m.moving, t);
+    },
+    hud(m, t) {
+      topBar('프로젝트 마감까지', 1 - Math.max(0, m.t) / m.dur, `${Math.max(0, m.dur - Math.max(0, m.t)).toFixed(1)}s`, '#8fd3ff');
+      const bw = Math.min(90, W / m.n - 14), bh = 10;
+      for (const tk of m.tasks) {
+        const cx = tk.x * S, y = (LH - 20 - 36) * S;
+        text(tk.name, cx, y - 12, 12, tk.urgent > 0 ? '#ff6b6b' : '#ffffff');
+        ctx.fillStyle = tk.urgent > 0 && (t * 8 | 0) % 2 ? '#ff4d5e' : '#1a1a2e';
+        ctx.fillRect(cx - bw / 2 - 3, y - 3, bw + 6, bh + 6);
+        ctx.fillStyle = '#3a3f4d'; ctx.fillRect(cx - bw / 2, y, bw, bh);
+        ctx.fillStyle = tk.v > 50 ? '#3ddc84' : tk.v > 25 ? '#ffd76a' : '#ff4d5e';
+        ctx.fillRect(cx - bw / 2, y, bw * Math.max(0, tk.v) / 100, bh);
+      }
+    },
+  },
+
+  pt: {
+    title: 'PT 발표하기', icon: '📊', scene: 'meeting',
+    desc: f => (f.flashy ? '화려한 PPT라 화살표가 많고 빨라요! ' : '') + '슬라이드 화살표가 노란 선에 닿을 때 같은 방향을 누르세요! 끝났을 때 청중 반응 60% 이상이면 발표 성공!',
+    controls: '← → 타이밍 맞춰 누르기 (휴대폰: 화면 좌우 터치)',
+    create(f) {
+      const bpm = f.flashy ? 128 : 108, beat = 60 / bpm, notes = [];
+      for (let b = 4; b < 4 + Math.floor(20 / beat); b++) {
+        if (Math.random() < (f.flashy ? .85 : .7)) notes.push({ time: b * beat, lane: Math.random() < .5 ? 0 : 1 });
+        if (Math.random() < (f.flashy ? .3 : .1)) notes.push({ time: (b + .5) * beat, lane: Math.random() < .5 ? 0 : 1 });
+      }
+      notes.sort((a, b) => a.time - b.time);
+      return { notes, meter: 50, combo: 0, flash: [0, 0], end: notes[notes.length - 1].time + 1.2, song: { ...MAPS[0].song, bpm } };
+    },
+    update(m, dt) {
+      m.flash[0] -= dt; m.flash[1] -= dt;
+      m.meter = Math.max(0, m.meter - 1.2 * dt);
+      for (const n of m.notes) {
+        if (!n.judged && m.t > n.time + .2) {
+          n.judged = true; m.meter -= 8; m.combo = 0;
+          floatText(LW / 2 + (n.lane ? 14 : -14), LH - 52, 'MISS', '#ff6b6b');
+          if (Math.random() < .5) floatText(10 + Math.random() * (LW - 20), LH - 30, '💤', '#ffffff');
+        }
+      }
+      if (m.meter <= 0) { m.reason = '청중 전원 취침… 😴'; return 'lose'; }
+      if (m.t >= m.end) {
+        if (m.meter >= 60) return 'win';
+        m.reason = `청중 반응 ${m.meter | 0}%… 60%가 안 돼요`; return 'lose';
+      }
+    },
+    press(m, dir) {
+      const lane = dir < 0 ? 0 : 1, lx = LW / 2 + (lane ? 14 : -14);
+      m.flash[lane] = .12;
+      let best = null;
+      for (const n of m.notes) if (!n.judged && n.lane === lane && Math.abs(n.time - m.t) < .22 && (!best || n.time < best.time)) best = n;
+      if (!best) { m.meter = Math.max(0, m.meter - 1); return; }
+      best.judged = true;
+      const d = Math.abs(best.time - m.t);
+      if (d < .08) { m.meter += 6; m.combo++; floatText(lx, LH - 52, 'PERFECT', '#ffd76a'); A.play('mash'); }
+      else if (d < .15) { m.meter += 3; m.combo++; floatText(lx, LH - 52, 'GOOD', '#7dff9a'); A.play('mash'); }
+      else { m.combo = 0; floatText(lx, LH - 52, 'BAD', '#ffb020'); }
+      m.meter = Math.min(100, m.meter);
+      if (m.combo && m.combo % 10 === 0) { floatText(LW / 2, LH * .4, `${m.combo} COMBO! 👏`, '#ffffff', 1.2); A.play('coin'); }
+    },
+    draw(m, g, t) {
+      const R = rect(g), hitY = LH - 40, top = 30, lanes = [LW / 2 - 14, LW / 2 + 14];
+      lanes.forEach((lx, i) => {
+        g.globalAlpha = .5; R(lx - 8, top, 16, hitY - top + 10, '#1a1a2e'); g.globalAlpha = 1;
+        R(lx - 9, hitY - 1, 18, 3, m.flash[i] > 0 ? '#ffffff' : '#ffd76a');
+        drawArrow(g, lx, hitY, i, '#6b7385');
+      });
+      for (const n of m.notes) {
+        if (n.judged) continue;
+        const y = hitY - (n.time - m.t) / 1.5 * (hitY - top);
+        if (y < top - 6) continue;
+        drawArrow(g, lanes[n.lane], y, n.lane, n.lane ? '#ff9ad5' : '#8fd3ff');
+      }
+      const px = Math.round(LW * .15);
+      drawRunnerAt(g, px, 1, false, t);
+      R(px + 6, LH - 4 - 16, 8, 1, '#8a5a2b');
+    },
+    hud(m) {
+      topBar(`청중 반응${m.combo > 1 ? ` · ${m.combo} COMBO` : ''}`, m.meter / 100, `${m.meter | 0}%`, m.meter >= 60 ? '#3ddc84' : '#ffb020', .6);
+    },
+  },
+
+  meeting: {
+    title: '거래처 미팅하기', icon: '🤝', scene: 'meeting', song: () => MAPS[1].song,
+    desc: f => (f.honestMeet ? '예의 있게, 하지만 솔직하게! ' : '부장님 말대로 무조건 맞장구! ') + '최사장님 질문에 알맞은 답을 골라요. 8문제 중 5개 이상 맞히면 성공! 시간이 지나면 침묵으로 처리돼요.',
+    controls: '← 왼쪽 답변 / → 오른쪽 답변 (휴대폰: 답변 쪽 터치)',
+    create: f => ({ mode: f.honestMeet ? 1 : 0, qs: shuffle(MEET_Q).slice(0, 8), i: 0, qt: 0, phase: 'ask', react: 0, ok: 0, bad: 0, swap: Math.random() < .5, chosen: -1, last: '', lastRight: false }),
+    update(m, dt) {
+      if (m.phase === 'ask') {
+        m.qt += dt;
+        if (m.qt > 4.5 - m.i * .15) meetAnswer(m, -1);
+      } else {
+        m.react -= dt;
+        if (m.react <= 0) {
+          m.i++;
+          if (m.i >= m.qs.length) {
+            if (m.ok >= 5) return 'win';
+            m.reason = `좋은 답변 ${m.ok}/8… 최사장님 표정이 굳었다`; return 'lose';
+          }
+          m.phase = 'ask'; m.qt = 0; m.swap = Math.random() < .5;
+        }
+      }
+    },
+    press(m, dir) { if (m.phase === 'ask') meetAnswer(m, dir < 0 ? 0 : 1); },
+    hud(m, t) {
+      const n = m.qs.length, i = Math.min(m.i, n - 1), q = m.qs[i];
+      topBar(`질문 ${i + 1} / ${n} · 좋은 답변 ${m.ok}개 (5개 목표)`, m.ok / 5, '', '#ff9ad5');
+      const qh = textBox(`최사장: "${q.q}"`, 12, 84, W - 24, 15, '#1a1a2e');
+      const sc = Math.max(3, Math.floor(Math.min(W * .42 / 16, H * .26 / 20)));
+      const py = 84 + qh + 14, P = PORTRAITS.choi;
+      ctx.drawImage(m.phase === 'ask' && (t * 6 | 0) % 2 ? P.open : P.closed, W / 2 - 8 * sc, py, 16 * sc, 20 * sc);
+      const by = py + 20 * sc + 10;
+      if (m.phase === 'ask') {
+        const r = 1 - m.qt / (4.5 - m.i * .15);
+        ctx.fillStyle = '#1a1a2e'; ctx.fillRect(W * .2 - 3, by - 3, W * .6 + 6, 12);
+        ctx.fillStyle = r > .35 ? '#ffd76a' : '#ff4d5e'; ctx.fillRect(W * .2, by, W * .6 * Math.max(0, r), 6);
+      } else {
+        textBox(m.last, W * .12, py + 20 * sc * .55, W * .76, 16, m.lastRight ? '#1f8a4c' : '#d83a3a', '#ffffff');
+      }
+      const ah = 96, ay = H - ah - 18, aw = (W - 36) / 2;
+      for (let k = 0; k < 2; k++) {
+        const str = q.a[m.swap ? 1 - k : k], x = 12 + k * (aw + 12);
+        let bg = '#fff8e6';
+        if (m.phase === 'react' && m.chosen === k) bg = m.lastRight ? '#9ff0bf' : '#ffb3b3';
+        ctx.fillStyle = '#1a1a2e'; ctx.fillRect(x - 3, ay - 3, aw + 6, ah + 6);
+        ctx.fillStyle = bg; ctx.fillRect(x, ay, aw, ah);
+        ctx.fillStyle = '#6d6a5c'; ctx.font = `12px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(k ? '오른쪽 ▶' : '◀ 왼쪽', x + aw / 2, ay + 14);
+        ctx.font = `14px ${FONT}`;
+        const lines = wrapText(str, aw - 14);
+        ctx.fillStyle = '#1a1a2e';
+        lines.forEach((l, j) => ctx.fillText(l, x + aw / 2, ay + 40 + j * 19));
+      }
+    },
+  },
+
+  union: {
+    title: '노조랑 열 올리기', icon: '✊', scene: 'work', song: () => MAPS[2].song,
+    desc: '강위원장의 말도 안 되는 주장에 논리로 맞서세요! ← → 를 번갈아 연타해서 줄다리기에서 이기면 승리! 억지 주장을 외칠 땐 더 세게 당겨요.',
+    controls: '← → 번갈아 연타 (휴대폰: 좌우 번갈아 터치)',
+    create: () => ({ dur: 20, m: 0, last: 0, surge: 0, surgeT: 2.5, shout: '', shoutT: 0, arg: '', argT: 0, ux: 0, px: 0 }),
+    update(m, dt) {
+      m.m -= (7 + m.t * .45) * dt;
+      if (m.surge > 0) { m.surge -= dt; m.m -= 24 * dt; }
+      m.surgeT -= dt;
+      if (m.surgeT <= 0) { m.surgeT = 3 + Math.random(); m.surge = 1.4; m.shout = pick(UNION_NONSENSE); m.shoutT = 2.2; A.play('boss'); shake = 4; }
+      m.shoutT -= dt; m.argT -= dt;
+      if (m.m >= 100) return 'win';
+      if (m.m <= -100) { m.reason = '목소리 큰 사람이 이겼다…'; return 'lose'; }
+      if (m.t >= m.dur) {
+        if (m.m > 0) return 'win';
+        m.reason = '시간 종료! 기세에서 밀렸다…'; return 'lose';
+      }
+    },
+    press(m, dir) {
+      if (dir === m.last) { m.m += .6; return; }
+      m.last = dir; m.m += 4.5; A.play('mash');
+      if (m.argT <= 0 && Math.random() < .2) { m.arg = pick(UNION_REBUT); m.argT = 1.5; }
+    },
+    draw(m, g, t) {
+      const R = rect(g), y = LH - 4, off = m.m / 100 * LW * .12;
+      m.ux = LW * .22 + off; m.px = LW * .78 + off;
+      const ry = y - 13;
+      for (let x = Math.round(m.ux) + 12; x < m.px - 6; x++) R(x, ry + (x % 2), 1, 1, '#c89456');
+      const fx = Math.round((m.ux + m.px) / 2);
+      R(fx, ry - 6, 1, 7, '#1a1a2e'); R(fx + 1, ry - 6, 4, 3, '#d83a3a');
+      R(Math.round(LW / 2), y - 3, 1, 4, '#ffffff');
+      drawUnionRep(g, m.ux, y, t, m.surge > 0);
+      g.drawImage(SPRITES.newbie.L[(t * 14 | 0) % 4], Math.round(m.px) - 13, y - 28);
+    },
+    hud(m, t) {
+      const x = 12, y = 58, w = W - 24, h = 14;
+      text('✊ 노조', x, y - 12, 13, '#ff6b6b', 'left');
+      text(`나 😤 · ⏱ ${Math.max(0, m.dur - Math.max(0, m.t)).toFixed(1)}s`, x + w, y - 12, 13, '#7dff9a', 'right');
+      ctx.fillStyle = '#1a1a2e'; ctx.fillRect(x - 3, y - 3, w + 6, h + 6);
+      ctx.fillStyle = '#3a3f4d'; ctx.fillRect(x, y, w, h);
+      const c = x + w / 2, v = Math.max(-100, Math.min(100, m.m)) / 100 * w / 2;
+      ctx.fillStyle = v < 0 ? '#ff4d5e' : '#3ddc84';
+      ctx.fillRect(Math.min(c, c + v), y, Math.abs(v), h);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(c - 1, y - 4, 3, h + 8);
+      if (m.shoutT > 0) drawBubble(m.shout, m.ux, LH - 4 - 27);
+      if (m.argT > 0) text(m.arg, Math.min(W - 80, m.px * S), (LH - 44) * S, 14, '#7dff9a');
+      if (m.t < 4 || (t * 3 | 0) % 2) text('← → 번갈아 연타!', W / 2, H * .38, 20, '#ffffff');
+    },
+  },
+
+  overtime: {
+    title: '야근 버티기', icon: '🌙', scene: 'office', dodge: true,
+    desc: '쏟아지는 업무폭탄을 30초 동안 버티세요! 클립으로 격파할 수 있고, 버프도 그대로 쓸 수 있어요.',
+    controls: '← → 이동 · 📎 클립 자동 발사 (스페이스 속사)',
+  },
+};
+
+// ---------- 스토리 대본 ----------
+const NODES = {
+  c1: {
+    scene: 'room',
+    lines: [
+      ['narr', '새벽 1시, 자취방. 휴대폰에 또 알림이 울린다.'],
+      ['me', '(서류 탈락 문자만 서른일곱 번째…)'],
+      ['mom', '우리 {nick}~ 엄마야! 대박무역에서 인턴 뽑는대! 정직원 전환도 된다더라!'],
+      ['me', '대박무역…? 사훈이 "까라면 까자"인 거기…?'],
+      ['mom', '찬밥 더운밥 가릴 때니! 자소서 마감이 오늘 아침 9시래~'],
+      ['me', '(8시간 남았다. 어떻게 쓰지…?)'],
+    ],
+    choices: [
+      { t: '✍️ 진심을 담아 한 글자씩 쓴다', go: 'r1' },
+      { t: '📋 인터넷 "합격 자소서"를 복붙한다 (쉬움)', set: { copy: 1 }, go: 'r1' },
+    ],
+  },
+  r1: { round: 'essay', win: 'c2', lose: 'E1' },
+  c2: {
+    scene: 'office',
+    lines: [
+      ['narr', '[인턴 1주 차] 대박무역(주) 영업2팀.'],
+      ['kim', '자네가 이번 인턴인가? 라떼는 말이야, 인턴이 첫날부터 커피를 30잔 탔어.'],
+      ['park', '(작게) 부장님 원래 저래요. 전 사수 박대리예요. 모르는 거 있으면 물어봐요!'],
+      ['kim', '마침 잘됐네. 이번 분기 수출 프로젝트, {nick} 씨가 한번 맡아 봐. 금요일까지!'],
+      ['me', '(첫 주에…? 프로젝트를…? 금요일까지…?)'],
+    ],
+    choices: [
+      { t: '💪 "제가 혼자 해보겠습니다!" (어려움)', set: { eager: 1 }, go: 'r2' },
+      { t: '🤝 박대리님께 도움을 요청한다', set: { team: 1 }, go: 'r2' },
+    ],
+  },
+  r2: { round: 'project', win: 'c3', lose: 'c2b' },
+  c2b: {
+    scene: 'office', set: { overtime: 1 }, next: 'r2b',
+    lines: [
+      ['kim', '아직도 안 끝났어? 오늘 야근이다! 마지막 사람이 불 끄고 가~'],
+      ['park', '…업무폭탄 떨어지기 시작하네요. 30초만 버텨요! 파이팅!'],
+    ],
+  },
+  r2b: { round: 'overtime', win: 'c3', lose: 'E2' },
+  c3: {
+    scene: 'office',
+    lines: f => [
+      ['narr', '[인턴 3주 차] 정규직 전환 평가 시즌이 다가온다.'],
+      ['lee', '인턴 여러분, 다음 주 성과 발표가 정규직 전환 평가에 반영됩니다.'],
+      ...(f.copy ? [
+        ['lee', '아, 그리고 {nick} 씨. 자소서에 적힌 "남극 탐험대 리더" 경험… 발표 때 꼭 들려주세요.'],
+        ['me', '(…복붙한 자소서에 그런 게 있었어?!)'],
+      ] : []),
+      ...(f.overtime ? [['park', '지난번 야근 버틴 거 부장님도 봤대요. 이번엔 만회해 봐요!']] : []),
+      ['park', '발표 자료 스타일은 정했어요?'],
+    ],
+    choices: [
+      { t: '✨ 화려한 애니메이션 PPT (어려움)', set: { flashy: 1 }, go: 'r3' },
+      { t: '📊 데이터 위주 담백한 PPT', go: 'r3' },
+    ],
+  },
+  r3: { round: 'pt', win: 'c4', lose: 'c3b' },
+  c3b: {
+    scene: 'meeting', set: { ptfail: 1 }, next: 'c4',
+    lines: [
+      ['narr', '발표 도중 임원 세 명이 졸았다.'],
+      ['kim', '발표가 그게 뭐야! …그래도 기회를 한 번 더 주지. 내일 거래처 미팅에 따라와.'],
+    ],
+  },
+  c4: {
+    scene: 'meeting',
+    lines: [
+      ['narr', '[인턴 5주 차] 거래처 미팅 날.'],
+      ['kim', '오늘 뵐 분은 30년 거래처 최사장님이야. 말 한마디 조심해!'],
+      ['choi', '허허, 새로 온 인턴인가? 요즘 젊은 사람 생각이 궁금하구먼.'],
+      ['kim', '(속삭이며) 무조건 맞장구 쳐. 알지?'],
+    ],
+    choices: [
+      { t: '🙇 부장님 말대로 무조건 맞장구', go: 'r4' },
+      { t: '🗣️ 예의 있게, 하지만 솔직하게', set: { honestMeet: 1 }, go: 'r4' },
+    ],
+  },
+  r4: { round: 'meeting', win: 'c5', lose: 'c4b' },
+  c4b: {
+    scene: 'meeting', set: { meetfail: 1 }, next: 'c5',
+    lines: [
+      ['choi', '흠… 오늘 미팅은 여기까지 하지.'],
+      ['kim', '(한숨) {nick} 씨, 나중에 얘기 좀 하자.'],
+    ],
+  },
+  c5: {
+    scene: 'office',
+    lines: [
+      ['narr', '[정규직 전환 심사 전날] 로비에서 누군가 확성기를 들고 다가온다.'],
+      ['kang', '거기 인턴! 정규직 되려면 우리 노조 "인턴분과"에 가입해야 하는 거 알지?'],
+      ['me', '그런 규정이… 있나요?'],
+      ['kang', '없으면 만들면 되지! 가입비는 월급의 50%! 매일 아침 구호 연습 필수!'],
+      ['park', '…말도 안 되는 소리예요. 근데 저분 목소리가 엄청 커요.'],
+    ],
+    choices: [
+      { t: '🔥 논리로 정면 승부한다', go: 'r5' },
+      { t: '😅 귀찮으니 일단 가입서에 사인', set: { union: 1 }, go: 'final' },
+    ],
+  },
+  r5: { round: 'union', win: 'final', lose: 'c5b' },
+  c5b: {
+    scene: 'office', set: { union: 1 }, next: 'final',
+    lines: [
+      ['kang', '하하하! 역시 목소리 큰 사람이 이기는 거야! 자, 여기 사인!'],
+      ['me', '(어… 어느새 사인을 해 버렸다…)'],
+    ],
+  },
+  scout: {
+    scene: 'office',
+    lines: [
+      ['narr', '심사 결과 발표 1시간 전, 모르는 번호로 전화가 왔다.'],
+      ['choi', '허허, 나 최사장일세. 자네 솔직한 게 마음에 들었어. 우리 회사로 오지 않겠나? 연봉 두 배로 주지.'],
+      ['me', '(두 배…?!)'],
+    ],
+    choices: [
+      { t: '🏢 그래도 대박무역에 남는다', set: { stay: 1 }, go: 'final' },
+      { t: '🤝 최사장님 회사로 간다!', go: 'E7' },
+    ],
+  },
+};
+
+const ENDINGS = {
+  E1: { no: 1, icon: '📭', title: '서류 광탈', scene: 'room', good: false,
+    text: '자소서를 끝내 완성하지 못했다. 38번째 탈락 문자가 도착했다… "귀하의 뛰어난 역량에도 불구하고"',
+    lines: [['narr', '오전 9시 1분. 자소서 제출 마감.'], ['me', '(…서른여덟 번째 탈락 문자다.)'], ['mom', '괜찮아~ 엄마가 떡볶이 사 갈게!']] },
+  E2: { no: 2, icon: '🌙', title: '야근의 늪', scene: 'office', good: false,
+    text: '인턴 2주 차 새벽 3시. {nick}은(는) 조용히 사직서를 출력했다.',
+    lines: [['narr', '새벽 3시. 사무실에 불 켜진 자리는 하나뿐이다.'], ['me', '…엄마, 나 그냥 집에 갈래.']] },
+  E3: { no: 3, icon: '🎉', title: '정직원 전환 성공!', scene: 'office', good: true, rank: '정직원',
+    text: '우여곡절 끝에 대박무역(주) 정직원이 된 {nick}. 드디어 사원증 줄 색이 바뀌었다! 진짜 회사 생활은 이제부터다.',
+    lines: [['lee', '{nick} 씨, 정규직 전환을 축하합니다!'], ['kim', '허허, 이제 진짜 우리 식구구먼. 오늘 회식이다!'], ['me', '(회식은… 좀…)']] },
+  E4: { no: 4, icon: '👑', title: '인턴 신화 — 대리 특채', scene: 'office', good: true, hidden: true, rank: '대리',
+    text: '실수 하나 없이 모든 과제를 해낸 전설의 인턴. 사장님 특명으로 정직원을 건너뛰고 대리로 특채되었다!',
+    lines: [['ceo', '자네가 소문의 그 인턴인가? 과제를 전부 완벽하게 해냈다지.'], ['ceo', '정직원 말고, 내일부터 대리로 출근하게!'], ['kim', '(…부장인 나보다 승진이 빠르잖아?)']] },
+  E5: { no: 5, icon: '📋', title: '자소서 표절 들통', scene: 'meeting', good: false,
+    text: '복붙한 자소서 속 "남극 탐험대 리더" 경력이 발목을 잡았다. 인사팀의 싸늘한 미소와 함께 인턴 생활 종료.',
+    lines: [['lee', '{nick} 씨, 발표에 "남극 탐험대" 얘기는 하나도 없던데요?'], ['lee', '혹시… 자소서 어디서 가져오셨어요?'], ['me', '(식은땀이 흐른다…)']] },
+  E6: { no: 6, icon: '✊', title: '인턴분과 위원장', scene: 'office', good: false, rank: '인턴분과 위원장',
+    text: '노조에 가입한 다음 날, 얼떨결에 인턴분과 위원장이 되었다. 정직원 전환은 뒷전, 오늘도 아침 구호 연습 중.',
+    lines: [['kang', '축하하네! 오늘부터 자네가 인턴분과 위원장이야!'], ['me', '네…? 저 아직 인턴인데요…?'], ['kang', '자, 구호 연습! "인턴에게 칼퇴를!"']] },
+  E7: { no: 7, icon: '🤝', title: '거래처 스카우트', scene: 'meeting', good: true, rank: '최사장네 정직원',
+    text: '솔직함을 알아본 최사장님의 스카우트! 연봉은 두 배, 김부장의 표정은 반값이 되었다.',
+    lines: [['choi', '잘 왔네! 우리 회사는 칼퇴가 사훈이야.'], ['narr', '한편 대박무역에서는 김부장이 멍하니 창밖을 보고 있었다.']] },
+  E8: { no: 8, icon: '♾️', title: '영원한 인턴', scene: 'office', good: false,
+    text: '"인턴 기간 6개월 연장입니다." {nick}의 사원증 줄은 오늘도 회색이다.',
+    lines: [['lee', '{nick} 씨… 인턴 기간이 6개월 연장되었습니다.'], ['me', '(사원증 줄 색깔은 오늘도 회색이다.)']] },
+};
+const ENDING_ORDER = Object.keys(ENDINGS);
+
+function judge(f) {
+  if (f.union) return 'E6';
+  if (f.copy && f.ptfail) return 'E5';
+  if (f.honestMeet && !f.meetfail && !f.stay) return 'scout';
+  const fails = (f.overtime ? 1 : 0) + (f.ptfail ? 1 : 0) + (f.meetfail ? 1 : 0);
+  if (fails === 0 && !f.copy) return 'E4';
+  if (fails <= 1) return 'E3';
+  return 'E8';
+}
+
+// ---------- 진행 ----------
+let story = null, dlg = null, mini = null, storyRun = null, storyPrev = null, pendingRound = null, pendingNext = null;
+
+function openStoryHome() {
+  toMenuState();
+  const seen = save.endings || [];
+  const list = $('endingList');
+  list.innerHTML = '';
+  for (const id of ENDING_ORDER) {
+    const e = ENDINGS[id], got = seen.includes(id), li = document.createElement('li');
+    li.textContent = got ? `${e.no}. ${e.icon} ${e.title}` : `${e.no}. ${e.hidden ? '??? (히든 엔딩)' : '???'}`;
+    if (!got) li.className = 'locked';
+    list.append(li);
+  }
+  $('edTotal').textContent = `${seen.length} / ${ENDING_ORDER.length}`;
+  $('stCont').classList.toggle('hidden', !(save.story && save.story.node));
+  showScreen('storyHome');
+}
+function storyStart(resume) {
+  A.init();
+  story = resume && save.story && save.story.node ? save.story : { node: 'c1', flags: {}, rank: 0, round: 0 };
+  goNode(story.node);
+}
+function goNode(id) {
+  if (id === 'final') id = judge(story.flags);
+  if (ENDINGS[id]) return showEnding(id);
+  const n = NODES[id];
+  story.node = id; save.story = story; persist();
+  if (n.round) return showRoundCard(n);
+  if (n.set) Object.assign(story.flags, n.set);
+  sceneKind = n.scene;
+  playDialog(typeof n.lines === 'function' ? n.lines(story.flags) : n.lines, n.choices, () => goNode(n.next));
+}
+
+function playDialog(lines, choices, onDone) {
+  state = 'story';
+  dlg = { lines, i: -1, who: '', full: '', chars: 0, choices, onDone, choosing: false, sel: 0 };
+  $('dlgRank').textContent = `📛 ${RANKS[story.rank]} · ${save.nick}`;
+  showScreen('dialog');
+  if (A.ctx && (A.song !== STORY_SONG || !A.timer)) { A.tempo = 1; A.startMusic(STORY_SONG); }
+  nextLine();
+}
+function nextLine() {
+  dlg.i++;
+  if (dlg.i >= dlg.lines.length) {
+    if (dlg.choices) return showChoices();
+    const f = dlg.onDone; dlg = null; return f();
+  }
+  const [who, raw] = dlg.lines[dlg.i];
+  dlg.who = who; dlg.full = fmt(raw); dlg.chars = 0;
+  const p = PEOPLE[who];
+  $('dlgName').textContent = p ? (typeof p.name === 'function' ? p.name() : p.name) : '';
+  $('dlgFace').classList.toggle('hidden', !PORTRAITS[who]);
+  $('dlgText').classList.toggle('narr', who === 'narr');
+  $('dlgText').textContent = '';
+  $('dlgNext').classList.add('hidden');
+  $('dlgChoices').classList.add('hidden');
+  drawFace(false);
+}
+function drawFace(open) {
+  const P = dlg && PORTRAITS[dlg.who];
+  if (!P) return;
+  const cv = $('dlgFace'), g = cv.getContext('2d'), img = open ? P.open : P.closed;
+  g.clearRect(0, 0, cv.width, cv.height);
+  g.drawImage(img, (cv.width - img.width) >> 1, cv.height - img.height);
+}
+function updateDialog(dt) {
+  if (!dlg || dlg.choosing || dlg.chars >= dlg.full.length) return;
+  const prev = dlg.chars | 0;
+  dlg.chars = Math.min(dlg.full.length, dlg.chars + dt * 38);
+  const now = dlg.chars | 0;
+  if (now !== prev) {
+    $('dlgText').textContent = dlg.full.slice(0, now);
+    if (now % 3 === 0 && dlg.who !== 'narr') A.play('talk');
+  }
+  if (dlg.chars >= dlg.full.length) { $('dlgNext').classList.remove('hidden'); drawFace(false); }
+  else drawFace((clock * 8 | 0) % 2);
+}
+function advanceDialog() {
+  if (!dlg || dlg.choosing) return;
+  if (dlg.chars < dlg.full.length) {
+    dlg.chars = dlg.full.length; $('dlgText').textContent = dlg.full;
+    $('dlgNext').classList.remove('hidden'); drawFace(false);
+    return;
+  }
+  A.play('click');
+  nextLine();
+}
+function skipDialog() {
+  if (!dlg || dlg.choosing) return;
+  dlg.i = dlg.lines.length - 2;
+  nextLine();
+  if (dlg) { dlg.chars = dlg.full.length; $('dlgText').textContent = dlg.full; $('dlgNext').classList.remove('hidden'); }
+}
+function showChoices() {
+  dlg.choosing = true; dlg.sel = 0;
+  const box = $('dlgChoices');
+  box.innerHTML = '';
+  dlg.choices.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.className = 'choice';
+    b.textContent = `${i + 1}. ${c.t}`;
+    b.addEventListener('click', e => { e.stopPropagation(); choose(i); });
+    b.addEventListener('mouseenter', () => { if (dlg) { dlg.sel = i; markChoice(); } });
+    box.append(b);
+  });
+  markChoice();
+  box.classList.remove('hidden');
+  $('dlgNext').classList.add('hidden');
+}
+function markChoice() { [...$('dlgChoices').children].forEach((b, i) => b.classList.toggle('on', dlg && i === dlg.sel)); }
+function choose(i) {
+  if (!dlg || !dlg.choosing) return;
+  const c = dlg.choices[i];
+  dlg = null;
+  A.play('coin');
+  Object.assign(story.flags, c.set || {});
+  goNode(c.go);
+}
+
+function showRoundCard(n) {
+  const def = MINI[n.round];
+  story.round++;
+  pendingRound = n;
+  sceneKind = def.scene;
+  state = 'story';
+  $('rcRound').textContent = `ROUND ${story.round} · 현재 직급: ${RANKS[story.rank]}`;
+  $('rcIcon').textContent = def.icon;
+  $('rcTitle').textContent = def.title;
+  $('rcDesc').textContent = typeof def.desc === 'function' ? def.desc(story.flags) : def.desc;
+  $('rcCtrl').textContent = '🎮 ' + def.controls;
+  showScreen('roundCard');
+  A.play('level');
+}
+function startRound() {
+  if (!pendingRound) return;
+  A.init();
+  if (MINI[pendingRound.round].dodge) startStoryDodge(); else startMini(pendingRound.round);
+}
+function startMini(type) {
+  const def = MINI[type];
+  mini = { type, def, m: def.create(story.flags), done: null, doneT: 0 };
+  mini.m.t = -1.4;
+  sceneKind = def.scene;
+  particles = []; floaters = []; shake = 0; flash = 0;
+  keys.left = keys.right = false; touch.left = touch.right = false;
+  state = 'mini';
+  for (const s of SCREENS) $(s).classList.add('hidden');
+  A.stopMusic();
+}
+function updateMini(dt) {
+  if (!mini) return;
+  const m = mini.m, prev = m.t;
+  m.t += dt;
+  if (prev < 0 && m.t >= 0) { A.tempo = 1; A.startMusic(m.song || mini.def.song()); }
+  if (mini.done) {
+    mini.doneT += dt;
+    if (mini.doneT > 1.4) finishRound(mini.done === 'win', m.reason);
+    return;
+  }
+  if (m.t < 0) return;
+  const r = mini.def.update(m, dt);
+  if (r) {
+    mini.done = r;
+    A.stopMusic();
+    if (r === 'win') { A.play('unlock'); flash = .5; } else { A.play('over'); shake = 10; }
+  }
+}
+function miniPress(dir) {
+  if (state === 'mini' && mini && !mini.done && mini.m.t >= 0 && mini.def.press) mini.def.press(mini.m, dir);
+}
+function startStoryDodge() {
+  storyPrev = { map, char };
+  map = MAPS[0]; char = charById('newbie');
+  reset(); buildBg();
+  storyRun = { goal: 30 };
+  nextCeoAt = Infinity;
+  state = 'play';
+  for (const s of SCREENS) $(s).classList.add('hidden');
+  $('hud').classList.add('playing');
+  setText('mapLbl', '🌙 야근 버티기 · 30초 목표');
+  A.tempo = 1; A.startMusic(map.song);
+}
+function restoreStoryDodge() {
+  if (!storyRun) return;
+  storyRun = null;
+  map = storyPrev.map; char = storyPrev.char;
+  types = buildTypes(); buildBg();
+  $('hud').classList.remove('playing');
+}
+function endStoryDodge(win) {
+  restoreStoryDodge();
+  A.stopMusic();
+  sceneKind = 'office';
+  if (win) A.play('unlock');
+  finishRound(win, '업무폭탄에 맞았다… 결국 뻗어 버렸다');
+}
+function finishRound(win, reason) {
+  const n = pendingRound;
+  state = 'story'; mini = null;
+  A.stopMusic();
+  const from = RANKS[story.rank];
+  if (win) story.rank = Math.min(RANKS.length - 1, story.rank + 1);
+  save.story = story; persist();
+  $('rsIcon').textContent = win ? '🎉' : '💥';
+  $('rsTitle').textContent = win ? '라운드 클리어!' : '라운드 실패…';
+  $('rsBody').textContent = win
+    ? (from === RANKS[story.rank] ? `📛 ${from} 유지` : `📛 진급! ${from} ▶ ${RANKS[story.rank]}`)
+    : (reason || '아쉽지만 실패…');
+  $('rsSub').textContent = win ? '다음 이야기로 넘어가요' : '실패해도 이야기는 계속돼요… 아마도?';
+  pendingNext = win ? n.win : n.lose;
+  showScreen('resultCard');
+  if (win) A.play('coin');
+}
+function goNext() {
+  if (!pendingNext) return;
+  const next = pendingNext;
+  pendingNext = null;
+  A.play('click');
+  goNode(next);
+}
+function showEnding(id) {
+  const e = ENDINGS[id];
+  story.node = null; save.story = null;
+  const seen = save.endings = save.endings || [];
+  const isNew = !seen.includes(id);
+  if (isNew) seen.push(id);
+  persist();
+  sceneKind = e.scene;
+  playDialog(e.lines, null, () => {
+    state = 'story';
+    A.stopMusic();
+    $('edNo').textContent = `ENDING #${e.no}${isNew ? ' · 🆕 새 엔딩!' : ''}`;
+    $('edIcon').textContent = e.icon;
+    $('edTitle').textContent = e.title;
+    $('edText').textContent = fmt(e.text);
+    $('edRank').textContent = `최종 직급: ${e.rank || RANKS[story.rank]}`;
+    $('edCount').textContent = `📚 엔딩 수집 ${seen.length} / ${ENDING_ORDER.length}`;
+    showScreen('endingCard');
+    A.play(e.good ? 'unlock' : 'over');
+  });
+}
+
+function renderStory() {
+  const t = clock;
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  if (shake > 0) ctx.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake);
+  const sc = scene(sceneKind);
+  ctx.drawImage(sc.cv, 0, 0, LW * S, LH * S);
+  if (sc.lay.banner) {
+    const b = sc.lay.banner;
+    text(sc.lay.bannerText, (b.x + b.w / 2) * S, (b.y + b.h / 2) * S + 1, Math.round(b.h * S * .6), sc.lay.bannerColor);
+  }
+  if (state === 'mini' && mini) {
+    fgG.clearRect(0, 0, LW, LH);
+    if (mini.def.draw) mini.def.draw(mini.m, fgG, t);
+    const R = rect(fgG);
+    for (const p of particles) { fgG.globalAlpha = Math.min(1, p.life * 2); R(p.x, p.y, p.sz, p.sz, p.c); }
+    fgG.globalAlpha = 1;
+    ctx.drawImage(loFg, 0, 0, LW * S, LH * S);
+  }
+  ctx.restore();
+  if (state === 'mini' && mini) {
+    const m = mini.m;
+    if (mini.def.hud) mini.def.hud(m, t);
+    for (const f of floaters) {
+      ctx.globalAlpha = Math.min(1, f.life * 2);
+      text(f.text, f.x * S, f.y * S, Math.round(S * 4.5 * f.size), f.color);
+    }
+    ctx.globalAlpha = 1;
+    if (m.t < .4) {
+      if (m.t < 0) { ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillRect(0, 0, W, H); }
+      text(mini.def.title, W / 2, H * .4, 26, '#ffd76a');
+      text(m.t < -.4 ? '준비…' : '시작!', W / 2, H * .5, 40, '#ffffff');
+    }
+    if (mini.done) text(mini.done === 'win' ? 'CLEAR!' : 'FAIL…', W / 2, H * .46, 52, mini.done === 'win' ? '#ffd76a' : '#ff4d5e');
+  } else {
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(0, 0, W, H);
+  }
+  if (flash > 0) { ctx.fillStyle = `rgba(255,255,255,${flash * .6})`; ctx.fillRect(0, 0, W, H); }
+}
+
 // ================= 입력 =================
 const visible = id => !$(id).classList.contains('hidden');
 window.addEventListener('keydown', e => {
@@ -1839,9 +2870,25 @@ window.addEventListener('keydown', e => {
   if (k === ' ') { keys.fire = true; e.preventDefault(); }
   if (k === 'Enter') e.preventDefault();
   if (e.repeat) return;
-  if (state === 'play') {
+  if (state === 'mini') {
+    if (k === 'ArrowLeft') miniPress(-1);
+    if (k === 'ArrowRight') miniPress(1);
+  } else if (state === 'story') {
+    if (visible('dialog') && dlg) {
+      if (dlg.choosing) {
+        const n = dlg.choices.length;
+        if (k === 'ArrowUp' || k === 'ArrowLeft') { e.preventDefault(); dlg.sel = (dlg.sel + n - 1) % n; markChoice(); }
+        else if (k === 'ArrowDown' || k === 'ArrowRight') { e.preventDefault(); dlg.sel = (dlg.sel + 1) % n; markChoice(); }
+        else if (/^[1-9]$/.test(k) && +k <= n) choose(+k - 1);
+        else if (k === 'Enter' || k === ' ') choose(dlg.sel);
+      } else if (k === 'Enter' || k === ' ') advanceDialog();
+    } else if (visible('roundCard') && (k === 'Enter' || k === ' ')) startRound();
+    else if (visible('resultCard') && (k === 'Enter' || k === ' ')) goNext();
+    else if (visible('endingCard') && k === 'Escape') openStoryHome();
+  } else if (state === 'play') {
     if (k === 'ArrowLeft' || k === 'ArrowRight') mash();
   } else if (state === 'menu') {
+    if (visible('storyHome') && k === 'Escape') { openHome(); return; }
     if (visible('home') && (k === 'Enter' || k === ' ')) { A.play('click'); openMapSelect(); }
     else if (visible('mapsel')) {
       if (k === 'Enter' || k === ' ') startGame();
@@ -1864,10 +2911,12 @@ window.addEventListener('keyup', e => {
 window.addEventListener('blur', () => { keys.left = keys.right = keys.fire = false; });
 
 function updateTouches(e) {
-  if (state !== 'play') return;
+  if (state !== 'play' && state !== 'mini') return;
   e.preventDefault();
-  if (e.type === 'touchstart') for (let i = 0; i < e.changedTouches.length; i++) mash();
   const r = canvas.getBoundingClientRect();
+  if (e.type === 'touchstart') for (const t of e.changedTouches) {
+    if (state === 'mini') miniPress(t.clientX - r.left < r.width / 2 ? -1 : 1); else mash();
+  }
   touch.left = touch.right = false;
   for (const t of e.touches) {
     if (t.clientX - r.left < r.width / 2) touch.left = true; else touch.right = true;
@@ -1885,6 +2934,22 @@ $('rankBack').addEventListener('click', () => { A.play('click'); openHome(); });
 $('retryBtn').addEventListener('click', startGame);
 $('homeBtn').addEventListener('click', () => { A.play('click'); openHome(); });
 $('muteBtn').addEventListener('click', e => { e.stopPropagation(); A.init(); A.setMuted(!save.muted); refreshMute(); });
+
+$('goStory').addEventListener('click', () => { A.play('click'); openStoryHome(); });
+$('stNew').addEventListener('click', () => { A.play('click'); storyStart(false); });
+$('stCont').addEventListener('click', () => { A.play('click'); storyStart(true); });
+$('stBack').addEventListener('click', () => { A.play('click'); openHome(); });
+$('dialog').addEventListener('click', advanceDialog);
+$('dlgSkip').addEventListener('click', e => { e.stopPropagation(); skipDialog(); });
+$('rcStart').addEventListener('click', startRound);
+$('rsNext').addEventListener('click', goNext);
+$('edRetry').addEventListener('click', () => { A.play('click'); storyStart(false); });
+$('edMenu').addEventListener('click', () => { A.play('click'); openStoryHome(); });
+canvas.addEventListener('mousedown', e => {
+  if (state !== 'mini') return;
+  const r = canvas.getBoundingClientRect();
+  miniPress(e.clientX - r.left < r.width / 2 ? -1 : 1);
+});
 
 // ================= 시작 =================
 window.addEventListener('resize', resize);
