@@ -200,6 +200,52 @@
   .chap.locked { cursor: not-allowed; }
   .chap.locked .st { color: var(--red); }
   .chap.soon .st { color: #d4a017; }
+  #bossPill.hard { background: rgba(160, 20, 20, .92); animation: pulse .5s steps(2) infinite; }
+  #bossPill.gold { background: rgba(190, 140, 20, .95); }
+  .perks { font-size: 12px; color: #8fd3ff; }
+  .perks:empty { display: none; }
+  .perk-btns { display: flex; gap: 10px; margin: 8px 0; }
+  .perk { flex: 1; font-family: inherit; color: inherit; border: 3px solid var(--line); background: var(--paper2); padding: 14px 8px; cursor: pointer; box-shadow: 3px 3px 0 var(--line); }
+  .perk:active { transform: translate(2px, 2px); }
+  .perk .ic { font-size: 34px; }
+  .perk .nm { font-size: 14px; margin-top: 6px; word-break: keep-all; }
+  .perk .lv { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .char.locked { cursor: not-allowed; }
+  .char.locked canvas { filter: grayscale(1) brightness(.35); }
+  .char.locked .nm, .char.locked .stat { opacity: .5; }
+  .char .lock { font-size: 11px; color: var(--red); margin-top: 4px; }
+  .titles { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  .tchip { font-family: inherit; font-size: 12px; padding: 6px 8px; border: 2px solid var(--line); background: var(--paper2); color: inherit; cursor: pointer; }
+  .tchip.sel { background: #f2c230; color: #1a1a2e; }
+  .badge .tt { font-size: 12px; color: #d4a017; }
+  .card-head { background: var(--line); color: #fff8e6; margin: -18px -16px 12px; padding: 8px 10px; font-size: 13px; }
+  .section { border-top: 3px dashed rgba(128,128,128,.4); margin-top: 12px; padding-top: 10px; }
+  .steps { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin: 6px 0; }
+  .step { font-size: 11px; padding: 4px 6px; border: 2px solid var(--line); background: var(--paper2); }
+  .step.win { background: #3ddc84; color: #1a1a2e; }
+  .step.lose { background: #ff6b6b; color: #1a1a2e; }
+  .step.cur { box-shadow: 0 0 0 3px #f2c230; }
+  .gift { font-family: inherit; width: 100%; padding: 16px; border: 3px solid var(--line); background: #f2c230; color: #1a1a2e; font-size: 17px; cursor: pointer; box-shadow: 3px 3px 0 var(--line); }
+  .gift.shake { animation: shake .5s steps(8); }
+  @keyframes shake { 25% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } 75% { transform: rotate(-4deg) scale(1.05); } }
+  .reward { display: flex; gap: 10px; align-items: center; border: 3px solid var(--line); background: var(--paper2); padding: 8px 10px; margin-top: 8px; text-align: left; font-size: 14px; animation: pop .4s steps(5) both; }
+  .reward canvas { width: 52px; height: 60px; image-rendering: pixelated; flex: none; }
+  .reward .big { font-size: 30px; width: 52px; text-align: center; flex: none; }
+  .reward small { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .flow { list-style: none; padding: 0; margin: 6px 0 10px; text-align: left; }
+  .flow li { margin: 5px 0; }
+  .flow button { width: 100%; text-align: left; font-family: inherit; font-size: 13px; padding: 9px 10px; border: 2px solid var(--line); background: var(--paper2); color: inherit; cursor: pointer; }
+  .flow li.locked { padding: 9px 10px; color: var(--muted); border: 2px dashed rgba(128,128,128,.5); font-size: 13px; }
+  #notice { z-index: 5; background: rgba(8, 10, 20, .7); }
+  .ver { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .ver button { font-family: inherit; font-size: 11px; background: none; border: 0; color: var(--blue); cursor: pointer; text-decoration: underline; padding: 0 0 0 6px; }
+  .notes { text-align: left; font-size: 13px; line-height: 1.6; margin: 0; }
+  .notes h3 { font-size: 14px; margin: 12px 0 4px; font-weight: normal; color: var(--blue); }
+  .notes ul { margin: 0; padding-left: 18px; }
+  .notes li { margin: 3px 0; word-break: keep-all; }
+  .notes .warn { color: var(--red); }
+  .chk { display: flex; align-items: center; gap: 8px; justify-content: center; font-size: 13px; margin-top: 12px; cursor: pointer; }
+  .chk input { width: 18px; height: 18px; accent-color: #f2c230; }
 </style>
 </head>
 <body>
@@ -207,11 +253,12 @@
   <canvas id="game"></canvas>
 
   <div id="hud">
-    <div id="scorePill" class="pill playing-only"><div class="lbl" id="mapLbl"></div><div class="val"><span id="score">0</span>점</div></div>
+    <div id="scorePill" class="pill playing-only"><div class="lbl" id="mapLbl"></div><div class="val"><span id="score">0</span>점</div><div class="perks" id="perkRow"></div></div>
     <div class="hud-right">
       <button id="muteBtn" class="pill">♪ ON</button>
       <div class="pill playing-only">⏱ <span id="time">0.0</span>s <span id="power"></span></div>
       <div class="pill playing-only" id="gaugePill"><span id="gauge"></span></div>
+      <div class="pill playing-only" id="bossPill"><span id="bossTxt"></span></div>
     </div>
   </div>
 
@@ -226,6 +273,7 @@
           <div class="co">(주)업무폭탄 사원증</div>
           <div class="nm" id="badgeName"></div>
           <div class="rk" id="badgeChar"></div>
+          <div class="tt" id="badgeTitle"></div>
         </div>
       </div>
       <button id="goStory" class="pbtn wide story">📖 스토리 모드 · 인턴의 수난시대</button>
@@ -235,6 +283,7 @@
         <button id="goId" class="pbtn alt">✏️ 사원증 수정</button>
       </div>
       <p class="muted">최고 기록 <span id="bestAll">0</span>점</p>
+      <p class="ver">v2.0.1<button id="openNotice">📢 패치노트</button></p>
     </div>
   </div>
 
@@ -246,6 +295,9 @@
         <input id="nickInput" maxlength="8" placeholder="최대 8글자" autocomplete="off" spellcheck="false">
       </label>
       <p class="err" id="nickErr"></p>
+      <div class="sub-title">🏷️ 칭호 <span class="muted" id="titleCount"></span></div>
+      <div class="titles" id="titles"></div>
+      <div class="sub-title">🧑‍💼 캐릭터 <span class="muted" id="charCount"></span></div>
       <div class="chars" id="chars"></div>
       <button id="idOk" class="pbtn wide">발급 완료 ✔</button>
     </div>
@@ -258,9 +310,10 @@
       <div id="maps"></div>
       <div class="howto">
         <b>이동</b> ← → (휴대폰은 화면 좌우 터치) · <b>📎 클립</b> 자동 발사, 스페이스로 속사<br>
-        <b>💣 업무폭탄</b>: 심지에 불붙은 빨간 것! 피하거나 격파<br>
-        <b>✨ 버프</b>: 반짝이는 방울 속 — 점심밥 든든(격파 2배) · 커피 3연발 · 🏖️ 연차 3초 무적 · 📋 결재도장 업무 전부 삭제<br>
-        너무 많이 먹으면 <b>하드모드</b>(상사 추격) · 60초마다 <b>사장님 보스전</b>!
+        <b>💣 업무폭탄</b>: 심지 달린 것! 30초마다 지그재그·급강하·분열·추적 유형이 추가돼요<br>
+        <b>✨ 버프</b>: 방울 속 — 점심밥 든든 · 커피 3연발 · 🏖️ 연차 무적 · 📋 결재도장<br>
+        <b>📈 진급 보너스</b>: 30초마다 강화 2개 중 하나 선택<br>
+        <b>👔 보스</b>: 오른쪽 위에 등장까지 남은 시간이 보여요. 이기면 🎁 보상 타임!
       </div>
       <div class="btns">
         <button id="mapBack" class="pbtn alt">← 홈</button>
@@ -303,6 +356,50 @@
     </div>
   </div>
 
+  <!-- 업데이트 안내 -->
+  <div id="notice" class="overlay hidden">
+    <div class="card">
+      <div class="card-head">📢 업데이트 v2.0.1 · 밸런스 패치</div>
+      <div class="notes">
+        <h3>📖 스토리 모드</h3>
+        <ul>
+          <li>🗺️ <b>스토리 흐름도</b>: 지나온 분기점부터 바로 다시 시작할 수 있어요</li>
+          <li>🔁 실패한 스테이지는 <b>다시 도전</b> 가능</li>
+          <li>📍 스테이지 진행 표시 + <b>다음 스테이지</b> 버튼으로 흐름이 한눈에</li>
+          <li>🎁 <b>엔딩 보상 상자</b>: 터치하면 캐릭터 해금 · 칭호 획득</li>
+        </ul>
+        <h3>⚡ 무한 모드</h3>
+        <ul>
+          <li>👔 <b>맵별 보스</b> 회장님 · 총괄 디렉터 · 월가 CEO! 오른쪽 위에 등장까지 남은 시간이 보이고, 5초 전부터 경고해요</li>
+          <li>🎁 보스를 이기면 <b>보상 타임</b>: 코인 비가 쏟아져요</li>
+          <li>🗺️ <b>맵 기믹</b>: 무역 📦 컨테이너 낙하 · 패션 💡 스포트라이트 점수 x2 · 월가 📈 상승장 / 📉 폭락장</li>
+          <li>💣 <b>새 업무폭탄</b>: 30초마다 지그재그 · 급강하 · 분열 · 추적 유형이 추가되고, 가끔 📨 단체 메일이 와요</li>
+          <li>📈 <b>진급 보너스</b>: 30초마다 강화 2개 중 하나 선택 (연사 · 관통 · 방어막 등)</li>
+          <li>⚖️ 속도만 빨라지던 난이도를 완화하고, 패턴으로 어려워지게 바꿨어요</li>
+        </ul>
+        <h3>🧑‍💼 캐릭터 · 칭호</h3>
+        <ul>
+          <li>신입사원은 기본, <b>나머지 캐릭터는 스토리 엔딩으로 해금</b>돼요</li>
+          <li>새 캐릭터 3종: ✊ 노조위원장 · 🤝 최사장 · 🚀 스타트업 대표</li>
+          <li>🏷️ <b>칭호</b>: 엔딩마다 획득, 사원증에서 장착하면 랭킹에 표시</li>
+          <li class="warn">⚠ 해금 전 캐릭터를 쓰고 있었다면 신입사원으로 바뀌어요 (랭킹 기록은 그대로)</li>
+        </ul>
+      </div>
+      <label class="chk"><input type="checkbox" id="noticeHide"> 이 버전 안내 다시 안 보기</label>
+      <button id="noticeOk" class="pbtn wide">확인 ▶</button>
+    </div>
+  </div>
+
+  <!-- 진급 보너스 선택 -->
+  <div id="perkCard" class="overlay hidden">
+    <div class="card">
+      <div class="muted">📈 업무량 증가 · Lv.<span id="perkLv"></span></div>
+      <div class="screen-title">진급 보너스 선택!</div>
+      <div class="perk-btns" id="perkBtns"></div>
+      <p class="muted">← 왼쪽 / 오른쪽 → 또는 터치</p>
+    </div>
+  </div>
+
   <!-- 스토리 모드 -->
   <div id="storyHome" class="overlay hidden">
     <div class="card">
@@ -319,6 +416,8 @@
       <div class="logo" style="font-size:28px" id="chTitle"></div>
       <p class="sub" id="chSub"></p>
       <p class="rc-desc" id="chIntro"></p>
+      <div class="sub-title">🗺️ 스토리 흐름도 · 원하는 분기점부터 다시 시작</div>
+      <ol class="flow" id="flowList"></ol>
       <div class="sub-title">📚 엔딩 도감 <span id="edTotal"></span></div>
       <ul class="endings" id="endingList"></ul>
       <button id="stCont" class="pbtn wide hidden">▶ 이어하기</button>
@@ -339,7 +438,8 @@
 
   <div id="roundCard" class="overlay hidden">
     <div class="card">
-      <div class="muted" id="rcRound"></div>
+      <div class="card-head" id="rcHead"></div>
+      <div class="steps" id="rcSteps"></div>
       <div class="rc-icon" id="rcIcon"></div>
       <div class="screen-title" id="rcTitle"></div>
       <p class="rc-desc" id="rcDesc"></p>
@@ -350,26 +450,43 @@
 
   <div id="resultCard" class="overlay hidden">
     <div class="card">
+      <div class="card-head" id="rsHead"></div>
       <div class="rc-icon" id="rsIcon"></div>
       <div class="screen-title" id="rsTitle"></div>
       <p class="big-rank" id="rsBody"></p>
-      <p class="muted" id="rsSub"></p>
-      <button id="rsNext" class="pbtn wide">계속 ▶</button>
+      <div class="section">
+        <div class="sub-title">📍 진행 상황</div>
+        <div class="steps" id="rsSteps"></div>
+        <p class="muted" id="rsSub"></p>
+      </div>
+      <div class="section">
+        <button id="rsRetry" class="pbtn wide hidden">🔁 이 스테이지 다시 도전</button>
+        <button id="rsNext" class="pbtn wide"></button>
+      </div>
     </div>
   </div>
 
   <div id="endingCard" class="overlay hidden">
     <div class="card">
-      <div class="muted" id="edNo"></div>
+      <div class="card-head" id="edNo"></div>
       <div class="rc-icon" id="edIcon"></div>
       <div class="screen-title" id="edTitle"></div>
       <p class="rc-desc" id="edText"></p>
       <p class="big-rank" id="edRank"></p>
-      <p class="muted" id="edCount"></p>
-      <p class="unlock hidden" id="edUnlock"></p>
-      <div class="btns">
-        <button id="edRetry" class="pbtn story">처음부터 다시</button>
-        <button id="edMenu" class="pbtn alt">스토리 메뉴</button>
+      <div class="section">
+        <button class="gift" id="edGift">🎁 엔딩 보상 — 터치해서 열기</button>
+        <div id="edRewards" class="hidden"></div>
+      </div>
+      <div class="section">
+        <p class="muted" id="edCount"></p>
+        <p class="unlock hidden" id="edUnlock"></p>
+      </div>
+      <div class="section">
+        <button id="edFlow" class="pbtn wide">🗺️ 흐름도에서 다른 선택 해보기</button>
+        <div class="btns">
+          <button id="edRetry" class="pbtn story">처음부터</button>
+          <button id="edMenu" class="pbtn alt">스토리 메뉴</button>
+        </div>
       </div>
     </div>
   </div>
@@ -480,6 +597,7 @@ const SPR = {
 };
 
 // ================= 캐릭터 =================
+const CH1_ENDS = ['E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8'];
 const CHARS = [
   {
     id: 'newbie', name: '신입사원', icon: '🐣', desc: '패기 넘치는 발놀림', speed: 1.2, fire: .32, power: 1, stats: [5, 2, 1],
@@ -487,18 +605,43 @@ const CHARS = [
   },
   {
     id: 'daeri', name: '대리', icon: '💼', desc: '밸런스형 실무 에이스', speed: 1.0, fire: .24, power: 1, stats: [4, 3, 1],
+    unlock: CH1_ENDS, hint: '1장 엔딩을 아무거나 1개 보면 해금',
     look: { suit: '#2e3f73', suit2: '#1e2a4f', pants: '#27366a', pants2: '#1b2447', hair: '#2b2118', tie: '#d83a3a' },
   },
   {
     id: 'bujang', name: '부장', icon: '👓', desc: '느리지만 결재는 광속', speed: .85, fire: .16, power: 1, stats: [2, 5, 1],
+    unlock: ['P1', 'P2'], hint: '2장 「대박 런칭」 또는 「공은 부장님께」 엔딩',
     look: { suit: '#6b4a2e', suit2: '#4e3520', pants: '#5a3f27', pants2: '#43301d', hair: '#555555', tie: '#2d6a3e', bald: true, glasses: true },
   },
   {
     id: 'ceo', name: '대표이사', icon: '👑', desc: '황금 클립 (데미지 2배)', speed: .8, fire: .26, power: 2, stats: [2, 3, 5],
+    unlock: ['E4', 'P6'], hint: '히든 엔딩(1장 또는 2장)을 보면 해금',
     look: { suit: '#1c1c22', suit2: '#101014', pants: '#1c1c22', pants2: '#101014', hair: '#c9c9d1', tie: '#e2b43c', mustache: true },
   },
+  {
+    id: 'union', name: '노조위원장', icon: '✊', desc: '상사가 절대 못 잡음 (하드모드 면역)', speed: .95, fire: .24, power: 1, stats: [3, 3, 1],
+    unlock: ['E6'], hint: '1장 「인턴분과 위원장」 엔딩',
+    look: { suit: '#3d6b3d', suit2: '#2c4f2c', pants: '#2a2f3d', pants2: '#1d2130', hair: '#1a1a1a', tie: null, headband: true },
+  },
+  {
+    id: 'choi', name: '최사장', icon: '🤝', desc: '점심밥 든든 효과 2배 지속', speed: .9, fire: .24, power: 1, stats: [3, 3, 1],
+    unlock: ['E7'], hint: '1장 「거래처 스카우트」 엔딩',
+    look: { suit: '#4a2f5e', suit2: '#352144', pants: '#2b2b2b', pants2: '#1c1c1c', hair: '#c9c9d1', tie: '#e2b43c', mustache: true },
+  },
+  {
+    id: 'startup', name: '스타트업 대표', icon: '🚀', desc: '후드티의 기동력 (가장 빠름)', speed: 1.35, fire: .22, power: 1, stats: [5, 4, 1],
+    unlock: ['P5'], hint: '2장 「스타트업 이직」 엔딩',
+    look: { suit: '#5a6b4a', suit2: '#44533a', pants: '#3a4a6a', pants2: '#2c3850', hair: '#3a2a1a', tie: null, glasses: true },
+  },
 ];
-const charById = id => CHARS.find(c => c.id === id) || CHARS[1];
+const charById = id => CHARS.find(c => c.id === id) || CHARS[0];
+const charUnlocked = c => !c.unlock || c.unlock.some(e => (save.endings || []).includes(e));
+// 엔딩마다 받는 칭호
+const ENDING_TITLES = {
+  E1: '📭 광탈 전문가', E2: '🌙 야근 요정', E3: '🎫 정규직', E4: '👑 인턴 신화', E5: '📋 복붙 장인', E6: '✊ 인턴분과 위원장', E7: '🤝 스카우트 1순위', E8: '♾️ 만년 인턴',
+  P1: '🚀 런칭 장인', P2: '🦜 그림자 PM', P3: '🗓️ 연기의 달인', P4: '🔋 방전 직장인', P5: '🚪 칼퇴컴퍼니 대표', P6: '👔 최연소 팀장',
+};
+const ownedTitles = () => Object.keys(ENDING_TITLES).filter(k => (save.endings || []).includes(k)).map(k => ENDING_TITLES[k]);
 
 // 서류가방 들고 달리는 직장인 (오른쪽 기준, 발끝 = (13, 28))
 function drawRunner(g, frame, dead, L) {
@@ -522,6 +665,7 @@ function drawRunner(g, frame, dead, L) {
   P(-3, -22 + b, 7, 7, SKIN);
   if (L.bald) { P(-3, -23 + b, 3, 1, L.hair); P(-4, -22 + b, 3, 4, L.hair); }
   else { P(-3, -23 + b, 7, 2, L.hair); P(-4, -22 + b, 3, 4, L.hair); }
+  if (L.headband) { P(-4, -21 + b, 8, 1, '#d83a3a'); P(0, -21 + b, 1, 1, '#f4f4f4'); }
   P(-1, -19 + b, 1, 2, '#d49a6a');
   if (dead) {
     for (const [x, y] of [[1, -20], [3, -20], [2, -19], [1, -18], [3, -18]]) P(x, y + b, 1, 1, '#1a1a2e');
@@ -901,6 +1045,7 @@ const A = {
         break;
       }
       case 'boom': this.hiss(t, .7, .6, 150); this.tone(110, t, .6, 'sine', 1, this.sfx, 30); break;
+      case 'coinp': this.tone(1320 + Math.random() * 200, t, .05, 'square', .08); break;
       case 'talk': this.tone(520 + Math.random() * 160, t, .03, 'square', .04); break;
       case 'over':
         [[72, 0, .16], [67, .18, .16], [64, .36, .16], [60, .54, .6]].forEach(([n, d, len]) => this.tone(mtof(n), t + d, len, 'square', .28));
@@ -986,7 +1131,7 @@ function renderRankList(ol, list, me, limit = 10) {
     if (me && (e.id ? e.id === me.id : e.n === me.n && e.s === me.s)) li.classList.add('me');
     const no = document.createElement('span'); no.className = 'no'; no.textContent = ['🥇', '🥈', '🥉'][i] || `${i + 1}`;
     const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = e.n;
-    const ch = charById(e.c), sm = document.createElement('small'); sm.textContent = `${ch.icon} ${ch.name}`; nm.append(sm);
+    const ch = charById(e.c), sm = document.createElement('small'); sm.textContent = `${e.t ? e.t + ' · ' : ''}${ch.icon} ${ch.name}`; nm.append(sm);
     const sc = document.createElement('span'); sc.className = 'sc'; sc.textContent = e.s.toLocaleString() + '점';
     li.append(no, nm, sc);
     ol.append(li);
@@ -1001,6 +1146,7 @@ let bgCache = null, layout = null;
 let map = mapById(save.sel);
 if (!isUnlocked(map)) map = MAPS[0];
 let char = charById(save.char);
+if (!charUnlocked(char)) char = CHARS[0];
 
 function buildBg() { bgCache = bake(LW, LH, g => { layout = map.bg(g, LW, LH); }); }
 function resize() {
@@ -1017,7 +1163,7 @@ function resize() {
 }
 
 // ================= 게임 상태 =================
-// menu → play → dying → ending(꼰대 등장) → wipe(화면 전환) → over(점수판)
+// menu → play (↔ perk: 진급 보너스 선택) → dying → ending(꼰대 등장) → wipe(화면 전환) → over(점수판)
 let state = 'menu';
 let player, drops, bullets, particles, floaters, types, bills = [];
 let elapsed, spawnTimer, fireTimer, powerTime, invTime, shake, flash, level;
@@ -1025,9 +1171,58 @@ let killPts, bonusPts, kills, ceoKills, meals, coffees, grabs, fullness, fedTime
 let animT = 0, clock = 0, lastEntry = null;
 let boss = { timer: 3, talk: 0, quote: '' };
 let chase = { phase: 'idle' };
-let bf = null, bfNum = 0, nextCeoAt = 60;
+let bf = null, bfNum = 0, nextCeoAt = 45, bossBeep = 0, rewardT = 0;
+let perks = {}, perkChoices = null, perkLock = 0, waveT = 22, gim = null, lasers = [];
 const keys = { left: false, right: false, fire: false };
 const touch = { left: false, right: false };
+const clamp = (lo, hi, v) => Math.max(lo, Math.min(hi, v));
+
+// 진급 보너스 (30초마다 둘 중 하나 선택)
+const PERKS = [
+  { id: 'rate', icon: '⚡', name: '연사 속도 +25%', max: 4 },
+  { id: 'speed', icon: '👟', name: '이동 속도 +15%', max: 3 },
+  { id: 'pierce', icon: '📎', name: '클립 관통 +1', max: 3 },
+  { id: 'shield', icon: '🛡️', name: '방어막 1회 (한 번 버팀)', max: 3 },
+  { id: 'blast', icon: '💥', name: '격파하면 주변도 펑', max: 2 },
+  { id: 'magnet', icon: '🧲', name: '버프 자석', max: 1 },
+  { id: 'coffee', icon: '☕', name: '커피 효과 +3초', max: 2 },
+  { id: 'fed', icon: '🍱', name: '든든 지속 +50%', max: 2 },
+];
+// 업무폭탄 움직임 유형: 레벨이 오를수록 새 유형이 섞인다
+const MOVES = [
+  { id: 'zig', lv: 1, short: '지그재그', name: '지그재그 업무폭탄', color: '#ffb020' },
+  { id: 'dive', lv: 2, short: '급강하', name: '급강하 업무폭탄 (세로 경고줄!)', color: '#ff4d5e' },
+  { id: 'split', lv: 2, short: '분열', name: '분열 업무폭탄 (중간에 둘로!)', color: '#4fd8ff' },
+  { id: 'homing', lv: 3, short: '추적', name: '추적 업무폭탄 (따라와요!)', color: '#c77dff' },
+];
+const moveOf = id => MOVES.find(m => m.id === id);
+
+SPR.coin = fromStr(['..KKKK..', '.KYYYYK.', 'KYWYYOYK', 'KYWYYOYK', 'KYYYYOYK', 'KYYYYOYK', '.KYOOYK.', '..KKKK..']);
+const COIN_T = { id: 'coin', kind: 'coin', spr: SPR.coin, name: '보너스 코인', w: 0 };
+const BOX_SPR = bake(24, 14, g => {
+  const R = rect(g);
+  R(0, 0, 24, 14, '#1a1a2e'); R(1, 1, 22, 12, '#d9772b'); R(1, 1, 22, 2, '#f09a4a');
+  for (let x = 3; x < 22; x += 3) R(x, 3, 1, 9, '#b35f1f');
+  R(8, 5, 8, 4, '#f4f4f4'); R(9, 6, 6, 2, '#2e3f73');
+});
+function bigFace(k) {
+  const mk = src => bake(24, 30, g => { g.imageSmoothingEnabled = false; g.drawImage(src, 0, 0, 24, 30); });
+  const closed = mk(FACES[k].closed), open = mk(FACES[k].open);
+  return { closed, open, white: tinted(closed, '#ffffff') };
+}
+Object.assign(MAPS[0], {
+  gimmick: '📦 컨테이너 낙하',
+  boss: { name: '회장님', spr: { ...CEO, white: CEO.white }, lines: ['이번 분기 실적이 이게 뭐야!', '결재 서류 전부 가져와!', '컨테이너째로 일을 주지!'] },
+});
+Object.assign(MAPS[1], {
+  gimmick: '💡 스포트라이트 점수 x2',
+  boss: { name: '총괄 디렉터', spr: bigFace('fashion'), lines: ['이번 시즌 망치면 끝이야!', '런웨이에 설 자격이 있나?', '컬렉션 전부 다시!'] },
+});
+Object.assign(MAPS[2], {
+  gimmick: '📈 상승장 · 📉 폭락장',
+  boss: { name: '월가 CEO', spr: bigFace('wall'), lines: ['분기 실적 발표다!', 'Sell everything!', '레이저처럼 정확하게!'] },
+});
+const BOSS_INTERVAL = 55;
 
 function buildTypes() {
   return [
@@ -1047,16 +1242,30 @@ function buildTypes() {
 function reset() {
   types = buildTypes();
   player = { x: LW / 2, y: LH - 4, face: 1, moving: false };
-  drops = []; bullets = []; particles = []; floaters = [];
+  drops = []; bullets = []; particles = []; floaters = []; lasers = [];
   elapsed = 0; spawnTimer = .6; fireTimer = 0; powerTime = 0; invTime = 0; level = 0;
   shake = 0; flash = 0;
   killPts = 0; bonusPts = 0; kills = 0; ceoKills = 0; meals = 0; coffees = 0; grabs = 0;
   fullness = 0; fedTime = 0; hitBy = null; dieT = 0; endT = 0; wipeT = 0;
   boss = { timer: 4, talk: 0, quote: '' };
   chase = { phase: 'idle', x: 0, face: -1, t: 0, hp: 0 };
-  bf = null; bfNum = 0; nextCeoAt = 60;
+  bf = null; bfNum = 0; nextCeoAt = 45; bossBeep = 0; rewardT = 0;
+  perks = Object.fromEntries(PERKS.map(p => [p.id, 0]));
+  perkChoices = null; perkLock = 0; waveT = 22;
+  gim = {
+    next: 12, boxes: [],
+    spot: { x: LW / 2, tx: LW / 2, t: 3 },
+    mkt: { state: 'normal', t: 14, val: 50, hist: Array(40).fill(50), tick: 0 },
+  };
 }
-const score = () => Math.floor(elapsed * 10) + killPts + bonusPts;
+const score = () => Math.floor(elapsed * 10 + killPts + bonusPts);
+const inSpot = () => map.id === 'fashion' && !storyRun && Math.abs(player.x - gim.spot.x) < 12;
+function killMult() {
+  let m = fedTime > 0 ? 2 : 1;
+  if (inSpot()) m *= 2;
+  if (map.id === 'wall' && !storyRun && gim.mkt.state === 'bull') m *= 2;
+  return m;
+}
 
 function pickType() {
   const total = types.reduce((s, x) => s + x.w, 0);
@@ -1065,20 +1274,36 @@ function pickType() {
 }
 function spawn(t) {
   const w = t.spr.width, h = t.spr.height;
-  const fall = LH * (.2 + Math.random() * .1 + elapsed * .016) * map.diff;
+  const fall = LH * (.2 + Math.random() * .1 + Math.min(elapsed, 150) * .012) * map.diff;
   const d = {
-    ...t, w, h, hp: t.hp || 1, flash: 0,
+    ...t, w, h, hp: t.hp || 1, flash: 0, age: 0, mv: 'normal',
     x: 8 + Math.random() * (LW - 16), y: -h,
-    vy: t.kind === 'work' ? fall : fall * .7,
-    vx: t.kind === 'work' && elapsed > 20 ? (Math.random() - .5) * LW * .25 : 0,
+    vy: t.kind === 'work' ? fall : fall * .7, vx: 0,
   };
+  if (t.kind === 'work') {
+    const avail = MOVES.filter(m => m.lv <= level);
+    if (avail.length && Math.random() < Math.min(.6, .2 + level * .12)) d.mv = pick(avail).id;
+    else if (elapsed > 20) d.vx = (Math.random() - .5) * LW * .2;
+  }
+  d.bx = d.x;
   drops.push(d);
   return d;
+}
+function spawnFormation() {
+  const n = Math.max(6, Math.floor(LW / 14)), gap = 1 + (Math.random() * (n - 3) | 0);
+  const vy = LH * (.22 + Math.min(elapsed, 150) * .004) * map.diff;
+  for (let i = 0; i < n; i++) {
+    if (i === gap || i === gap + 1) continue;
+    const d = spawn(types[0]);
+    d.x = d.bx = (i + .5) * LW / n; d.y = -10; d.vy = vy; d.vx = 0; d.mv = 'normal';
+  }
+  floatText(LW / 2, LH * .3, '📨 단체 메일 발송! 빈틈으로 피하세요', '#ffd76a', 1.1);
+  A.play('warn');
 }
 
 function fire() {
   const spread = powerTime > 0 ? [-.25, 0, .25] : [0];
-  for (const a of spread) bullets.push({ x: player.x + player.face * 2, y: player.y - 24, vx: a * LH, vy: -LH * 1.1 });
+  for (const a of spread) bullets.push({ x: player.x + player.face * 2, y: player.y - 24, vx: a * LH, vy: -LH * 1.1, pierce: perks.pierce });
   A.play('shoot');
 }
 
@@ -1096,6 +1321,66 @@ function explodeWork(d, withPts) {
   burst(d.x, d.y, BOOM, 16, 70);
   if (withPts) { kills++; killPts += d.pts; }
 }
+function killDrop(d, chain = true) {
+  const pts = Math.round(d.pts * killMult());
+  d.dead = true; kills++; killPts += pts;
+  burst(d.x, d.y, BOOM, 16, 70);
+  floatText(d.x, d.y, `+${pts}`, pts > d.pts ? '#7dff9a' : '#ff6b6b');
+  A.play('kill');
+  if (chain && perks.blast) {
+    for (const o of drops) {
+      if (o.dead || o.kind !== 'work' || Math.hypot(o.x - d.x, o.y - d.y) > 10 + perks.blast * 6) continue;
+      o.hp -= 1;
+      if (o.hp <= 0) killDrop(o, false);
+    }
+  }
+}
+// 맞았을 때: 연차 무적 → 무시, 방어막 → 1회 버팀, 아니면 게임 오버 (true)
+function hurt(d) {
+  if (invTime > 0) return false;
+  if (perks.shield > 0) {
+    perks.shield--; invTime = 1; flash = .4; shake = 6;
+    floatText(player.x, player.y - 34, '🛡️ 방어막!', '#8fd3ff', 1.1);
+    A.play('grab');
+    return false;
+  }
+  die(d);
+  return true;
+}
+
+function openPerk() {
+  const pool = PERKS.filter(p => perks[p.id] < p.max);
+  if (pool.length < 2) return false;
+  perkChoices = shuffle(pool).slice(0, 2);
+  state = 'perk'; perkLock = .5;
+  keys.left = keys.right = keys.fire = false; touch.left = touch.right = false;
+  $('perkLv').textContent = level + 1;
+  const box = $('perkBtns');
+  box.innerHTML = '';
+  perkChoices.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.className = 'perk';
+    b.innerHTML = '<div class="ic"></div><div class="nm"></div><div class="lv"></div>';
+    b.querySelector('.ic').textContent = p.icon;
+    b.querySelector('.nm').textContent = p.name;
+    b.querySelector('.lv').textContent = `${i ? '오른쪽 →' : '← 왼쪽'} · 보유 ${perks[p.id]}/${p.max}`;
+    b.addEventListener('click', () => takePerk(i));
+    box.append(b);
+  });
+  $('perkCard').classList.remove('hidden');
+  A.play('level');
+  return true;
+}
+function takePerk(i) {
+  if (state !== 'perk' || perkLock > 0 || !perkChoices) return;
+  const p = perkChoices[i];
+  perks[p.id]++;
+  perkChoices = null;
+  $('perkCard').classList.add('hidden');
+  state = 'play';
+  floatText(LW / 2, LH * .45, `${p.icon} ${p.name}`, '#7dff9a', 1.2);
+  A.play('coin');
+}
 
 function update(dt) {
   clock += dt;
@@ -1110,7 +1395,7 @@ function update(dt) {
     boss.quote = map.quotes[Math.random() * map.quotes.length | 0];
     boss.talk = 2.2;
     boss.timer = state === 'play' ? Math.max(3.5, 7 - elapsed * .03) : 5;
-    if (state === 'play') { A.play('boss'); spawn(types[3]); }
+    if (state === 'play' && !rewardT) { A.play('boss'); spawn(types[3]); }
   }
 
   for (const p of particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 140 * dt; p.life -= dt; }
@@ -1141,48 +1426,89 @@ function update(dt) {
     for (const b of bills) { b.y += b.vy * dt; b.x += Math.sin(clock * 2 + b.p) * 20 * dt; b.r += b.vr * dt; if (b.y > H + 20) { b.y = -20; b.x = Math.random() * W; } }
     return;
   }
+  if (state === 'perk') { perkLock -= dt; return; }
   if (state !== 'play') return;
 
   elapsed += dt;
   if (storyRun && elapsed >= storyRun.goal) { endStoryDodge(true); return; }
-  A.tempo = (1 + Math.min(elapsed, 120) / 240) * (chase.phase === 'idle' ? 1 : 1.12) * (bf ? 1.15 : 1);
-  if (Math.floor(elapsed / 30) > level) {
-    level = Math.floor(elapsed / 30);
-    if (level % 2) { floatText(LW / 2, LH * .4, `업무량 증가! Lv.${level + 1}`, '#ffd76a', 1.6); A.play('level'); }
-  }
+  A.tempo = (1 + Math.min(elapsed, 120) / 240) * (chase.phase === 'idle' ? 1 : 1.12) * (bf ? 1.15 : 1) * (rewardT > 0 ? 1.2 : 1);
   powerTime = Math.max(0, powerTime - dt);
   invTime = Math.max(0, invTime - dt);
   fedTime = Math.max(0, fedTime - dt);
+  rewardT = Math.max(0, rewardT - dt);
   if (chase.phase === 'idle') fullness = Math.max(0, fullness - dt / 8);
 
+  // 이동
   const dir = (keys.right || touch.right ? 1 : 0) - (keys.left || touch.left ? 1 : 0);
   player.moving = dir !== 0;
   if (dir) player.face = dir;
-  player.x += dir * LW * (.75 + elapsed * .006) * char.speed * (chase.phase === 'grab' ? .3 : 1) * dt;
-  player.x = Math.max(7, Math.min(LW - 7, player.x));
+  player.x += dir * LW * (.75 + Math.min(elapsed, 150) * .004) * char.speed * (1 + perks.speed * .15) * (chase.phase === 'grab' ? .3 : 1) * dt;
+  for (const b of gim.boxes) if (b.phase === 'stay' && Math.abs(player.x - b.x) < 16) player.x = player.x < b.x ? b.x - 16 : b.x + 16;
+  player.x = clamp(7, LW - 7, player.x);
   updateChase(dt);
   updateCeo(dt);
+  if (!storyRun && updateGimmick(dt)) return;
 
-  fireTimer -= dt;
-  if (fireTimer <= 0) { fire(); fireTimer = char.fire * (keys.fire ? .5 : 1) * (fedTime > 0 ? .8 : 1); }
-
-  spawnTimer -= dt;
-  if (spawnTimer <= 0) {
-    const t = pickType();
-    if (!(bf && Math.random() < .7)) spawn(t);
-    spawnTimer = Math.max(.14, (.75 - elapsed * .018) / map.diff);
+  // 레벨업: 새 업무 유형 + 진급 보너스
+  const lv = Math.floor(elapsed / 30);
+  if (lv > level && !bf && !rewardT) {
+    level = lv;
+    MOVES.filter(m => m.lv === level).forEach((m, i) => floatText(LW / 2, LH * (.28 + i * .07), `⚠ 새 유형: ${m.name}`, m.color, 1.1));
+    if (!storyRun && openPerk()) return;
   }
 
+  fireTimer -= dt;
+  if (fireTimer <= 0) { fire(); fireTimer = char.fire * (keys.fire ? .5 : 1) * (fedTime > 0 ? .8 : 1) / (1 + perks.rate * .25); }
+
+  // 생성
+  spawnTimer -= dt;
+  if (spawnTimer <= 0) {
+    if (rewardT > 0) {
+      const c = spawn(COIN_T);
+      c.vy = LH * (.4 + Math.random() * .15);
+      if (Math.random() < .07) spawn(pick(types.filter(x => x.kind !== 'work')));
+      spawnTimer = .1;
+    } else {
+      const t = pickType();
+      if (!(bf && Math.random() < .7)) spawn(t);
+      spawnTimer = Math.max(.2, (.75 - Math.min(elapsed, 150) * .012) / map.diff) * (map.id === 'wall' && !storyRun && gim.mkt.state === 'crash' ? .55 : 1);
+    }
+  }
+  if (!storyRun && !bf && !rewardT) {
+    waveT -= dt;
+    if (waveT <= 0 && elapsed > 18) { waveT = 24 + Math.random() * 6; spawnFormation(); }
+  }
+
+  // 움직임
   for (const b of bullets) { b.x += b.vx * dt; b.y += b.vy * dt; }
   for (const d of drops) {
-    d.y += d.vy * dt; d.x += d.vx * dt;
-    if (d.x < d.w / 2 || d.x > LW - d.w / 2) d.vx *= -1;
+    d.age += dt;
     d.flash = Math.max(0, d.flash - dt);
+    if (d.mv === 'dive' && !d.dived) {
+      if (d.y < 16) d.y += d.vy * dt;
+      else { d.hold = (d.hold || 0) + dt; if (d.hold > .8) { d.dived = true; d.vy *= 2.8; } }
+    } else d.y += d.vy * dt;
+    if (d.mv === 'zig') {
+      d.x = clamp(d.w / 2, LW - d.w / 2, d.bx + Math.sin(d.age * 4) * 12);
+    } else {
+      if (d.mv === 'homing') d.vx = clamp(-LW * .22, LW * .22, d.vx + Math.sign(player.x - d.x) * LW * .5 * dt);
+      d.x += d.vx * dt;
+      if (d.x < d.w / 2 || d.x > LW - d.w / 2) d.vx *= -1;
+    }
+    if (d.mv === 'split' && !d.split && d.y > LH * .38) {
+      d.split = true; d.dead = true;
+      burst(d.x, d.y, ['#4fd8ff', '#ffffff'], 10, 50);
+      for (const s of [-1, 1]) drops.push({ ...d, mv: 'normal', split: true, dead: false, hp: 1, x: d.x + s * 4, vx: s * LW * .22, pts: Math.round(d.pts / 2) });
+    }
+    if (perks.magnet && d.kind !== 'work' && d.y > LH * .35) {
+      const dx = player.x - d.x;
+      if (Math.abs(dx) < 45) d.x += Math.sign(dx) * Math.min(Math.abs(dx), LW * .4 * dt);
+    }
     // 바닥에 떨어진 업무폭탄은 펑!
     if (d.kind === 'work' && d.y > LH - 6 && !d.dead) { d.dead = true; burst(d.x, LH - 5, BOOM, 8, 40); A.play('bomb'); }
   }
 
-  // 클립 vs 사장님 / 업무폭탄
+  // 클립 vs 보스 / 업무폭탄
   for (const b of bullets) {
     if (bf && (bf.phase === 'in' || bf.phase === 'fight') && Math.abs(b.x - bf.x) < 11 && Math.abs(b.y - bf.y) < 12) {
       b.dead = true; bf.hp -= char.power; bf.flash = .08; killPts += 10;
@@ -1191,20 +1517,13 @@ function update(dt) {
       continue;
     }
     for (const d of drops) {
-      if (d.kind !== 'work' || d.dead || b.dead) continue;
+      if (d.kind !== 'work' || d.dead || b.dead || (b.hit && b.hit.has(d))) continue;
       const r = Math.max(d.w, d.h) * .5 + 1;
       if (Math.abs(d.x - b.x) < r && Math.abs(d.y - b.y) < r) {
-        b.dead = true; d.hp -= char.power; d.flash = .1;
-        if (d.hp <= 0) {
-          const pts = d.pts * (fedTime > 0 ? 2 : 1);
-          d.dead = true; kills++; killPts += pts;
-          burst(d.x, d.y, BOOM, 16, 70);
-          floatText(d.x, d.y, `+${pts}`, fedTime > 0 ? '#7dff9a' : '#ff6b6b');
-          A.play('kill');
-        } else {
-          burst(d.x, d.y, ['#ffd76a'], 5, 40);
-          A.play('ding');
-        }
+        if (b.pierce > 0) { b.pierce--; (b.hit = b.hit || new Set()).add(d); } else b.dead = true;
+        d.hp -= char.power; d.flash = .1;
+        if (d.hp <= 0) killDrop(d);
+        else { burst(d.x, d.y, ['#ffd76a'], 5, 40); A.play('ding'); }
       }
     }
   }
@@ -1218,20 +1537,25 @@ function update(dt) {
     const dx = d.x - pcx, dy = d.y - pcy;
     if (dx * dx + dy * dy >= (pr + dr) ** 2) continue;
     if (d.kind === 'work') {
-      if (invTime > 0) { explodeWork(d, false); A.play('bomb'); continue; }
-      return die(d);
+      explodeWork(d, false); A.play('bomb');
+      if (hurt(d)) return;
+      continue;
     }
     d.dead = true;
-    if (d.kind === 'food') {
+    if (d.kind === 'coin') {
+      bonusPts += 100;
+      floatText(d.x, d.y, '+100', '#ffd76a');
+      A.play('coinp');
+    } else if (d.kind === 'food') {
       meals++;
-      fedTime = Math.min(10, fedTime + d.fed);
+      fedTime = Math.min(15, fedTime + d.fed * (1 + perks.fed * .5) * (char.id === 'choi' ? 2 : 1));
       if (chase.phase === 'idle') fullness += d.fill;
       floatText(d.x, d.y, '든든! 격파 x2', '#7dff9a');
       burst(d.x, d.y, ['#7dff9a', '#fff3b0'], 12);
       A.play('eat', Math.min(meals, 6));
       if (fullness >= 5 && chase.phase === 'idle') startChase();
     } else if (d.id === 'coffee') {
-      powerTime = 6; coffees++;
+      powerTime = 6 + perks.coffee * 3; coffees++;
       floatText(d.x, d.y, '3연발!', '#ffb020');
       burst(d.x, d.y, ['#ffb020', '#fff3b0'], 12);
       A.play('coffee');
@@ -1254,6 +1578,70 @@ function update(dt) {
   bullets = bullets.filter(b => !b.dead && b.y > -10 && b.x > -10 && b.x < LW + 10);
 }
 
+// ================= 맵 기믹 =================
+function dropBox(x) {
+  gim.boxes.push({ x: clamp(14, LW - 14, x), phase: 'warn', t: 1.5, y: -16 });
+  A.play('warn');
+}
+// 반환값 true = 게임 오버
+function updateGimmick(dt) {
+  if (map.id === 'trade') {
+    gim.next -= dt;
+    if (gim.next <= 0 && elapsed > 12 && !rewardT) { gim.next = 11 + Math.random() * 6; dropBox(player.x + (Math.random() - .5) * 30); }
+  } else if (map.id === 'fashion') {
+    const sp = gim.spot;
+    sp.t -= dt;
+    if (sp.t <= 0) { sp.t = 2.5 + Math.random() * 2.5; sp.tx = 14 + Math.random() * (LW - 28); }
+    sp.x += (sp.tx - sp.x) * Math.min(1, dt * 1.2);
+    if (inSpot()) bonusPts += 20 * dt;
+  } else if (map.id === 'wall') {
+    const k = gim.mkt;
+    k.t -= dt; k.tick -= dt;
+    if (k.t <= 0) {
+      if (k.state === 'normal' && elapsed > 10) {
+        k.state = Math.random() < .5 ? 'bull' : 'crash';
+        k.t = k.state === 'bull' ? 10 : 8;
+        floatText(LW / 2, LH * .34, k.state === 'bull' ? '📈 상승장! 격파 점수 x2' : '📉 폭락장! 폭탄 급증 (버티면 보너스)', k.state === 'bull' ? '#3ddc84' : '#ff4d5e', 1.2);
+        A.play(k.state === 'bull' ? 'coin' : 'warn');
+      } else { k.state = 'normal'; k.t = 10 + Math.random() * 6; }
+    }
+    if (k.tick <= 0) {
+      k.tick = .25;
+      const d = k.state === 'bull' ? 2 + Math.random() * 3 : k.state === 'crash' ? -3 - Math.random() * 3 : (Math.random() - .5) * 6;
+      k.val = clamp(5, 95, k.val + d);
+      k.hist.push(k.val); k.hist.shift();
+    }
+    if (k.state === 'crash') bonusPts += 5 * dt;
+  }
+  // 컨테이너
+  for (const b of gim.boxes) {
+    b.t -= dt;
+    if (b.phase === 'warn' && b.t <= 0) b.phase = 'fall';
+    else if (b.phase === 'fall') {
+      b.y += LH * 2.4 * dt;
+      if (b.y >= LH - 4) {
+        b.y = LH - 4; b.phase = 'stay'; b.t = 3.5; shake = 9;
+        A.play('boom');
+        burst(b.x, LH - 6, ['#cfc8b0', '#d9772b'], 16, 60);
+        for (const d of drops) if (!d.dead && d.kind === 'work' && Math.abs(d.x - b.x) < 14 && d.y > LH - 30) explodeWork(d, false);
+        if (Math.abs(player.x - b.x) < 14 && hurt({ name: '떨어지는 컨테이너' })) return true;
+      }
+    } else if (b.phase === 'stay' && b.t <= 0) b.dead = true;
+  }
+  gim.boxes = gim.boxes.filter(b => !b.dead);
+  // 월가 CEO 레이저
+  for (const l of lasers) {
+    l.t -= dt;
+    if (l.phase === 'warn' && l.t <= 0) { l.phase = 'fire'; l.t = .35; shake = 5; A.play('boom'); }
+    else if (l.phase === 'fire') {
+      if (Math.abs(player.x - l.x) < 6 && hurt({ name: '차트 레이저' })) return true;
+      if (l.t <= 0) l.dead = true;
+    }
+  }
+  lasers = lasers.filter(l => !l.dead);
+  return false;
+}
+
 // ================= 하드모드: 너무 많이 먹으면 상사가 쫓아온다 =================
 function startChase() {
   chase = { phase: 'warn', x: LW - 20, face: -1, t: 1.1, hp: 0 };
@@ -1270,13 +1658,13 @@ function updateChase(dt) {
   } else if (c.phase === 'run') {
     const dx = player.x - c.x;
     c.face = dx > 0 ? 1 : -1;
-    c.x += c.face * LW * (.36 + elapsed * .002) * map.diff * dt;
+    c.x += c.face * LW * (.36 + Math.min(elapsed, 150) * .002) * map.diff * dt;
     if (Math.random() < dt * 8) particles.push({ x: c.x - c.face * 4, y: LH - 4, vx: -c.face * 10, vy: -8, life: .3, c: '#cfc8b0', sz: 1 });
     if (Math.abs(dx) < 9) {
       fullness = 0;
-      if (invTime > 0) {
+      if (invTime > 0 || char.id === 'union') {
         c.phase = 'return';
-        floatText(player.x, LH - 40, '연차 중이라 못 잡음!', '#8fd3ff', 1.1);
+        floatText(player.x, LH - 40, char.id === 'union' ? '위원장님은 못 잡아요!' : '연차 중이라 못 잡음!', '#8fd3ff', 1.1);
         A.play('giveup');
       } else {
         c.phase = 'grab'; c.t = 3.5; c.hp = 7; grabs++;
@@ -1308,24 +1696,50 @@ function mash() {
 }
 const bossAway = () => chase.phase === 'run' || chase.phase === 'grab' || chase.phase === 'return';
 
-// ================= 보스전: 60초마다 사장님 등장 =================
+// ================= 보스전: 맵마다 다른 보스, 5초 전 카운트다운 예고 =================
 function startCeo() {
   bfNum++;
-  const hp = Math.round((28 + bfNum * 14) * map.diff);
-  bf = { phase: 'in', t: 0, x: LW / 2, y: -30, hp, max: hp, atk: 1.4, flash: 0, time: 20, n: bfNum,
-    quote: CEO_LINES[Math.random() * CEO_LINES.length | 0], talk: 2.6 };
-  floatText(LW / 2, LH * .42, '⚠ 사장님 등장! ⚠', '#ff4d5e', 1.8);
+  const hp = Math.round((26 + bfNum * 14) * map.diff);
+  bf = { phase: 'in', t: 0, x: LW / 2, y: -30, hp, max: hp, atk: 1.4, special: 3.5, flash: 0, time: 22, n: bfNum,
+    quote: pick(map.boss.lines), talk: 2.6 };
+  floatText(LW / 2, LH * .42, `⚠ ${map.boss.name} 등장! ⚠`, '#ff4d5e', 1.8);
   A.play('ceoIn');
 }
 function throwCeoBomb(spread = 0) {
   const d = spawn(types[Math.random() * 4 | 0]);
-  d.x = bf.x; d.y = bf.y + 12;
+  d.x = d.bx = bf.x; d.y = bf.y + 12; d.mv = 'normal';
   d.vx = (player.x - bf.x) * .7 + spread * LW;
   d.vy = LH * (.35 + bf.n * .03) * map.diff;
 }
+function bossSpecial() {
+  bf.talk = 1.2;
+  if (map.id === 'trade') {
+    dropBox(player.x);
+    bf.quote = '컨테이너 받아라!';
+  } else if (map.id === 'fashion') {
+    for (let i = -2; i <= 2; i++) {
+      const d = spawn(types[3]);
+      d.x = d.bx = bf.x; d.y = bf.y + 10; d.mv = 'normal'; d.hp = 1;
+      d.vx = i * LW * .16; d.vy = LH * .4 * map.diff;
+    }
+    bf.quote = '이번 시즌 컬렉션이다!';
+    A.play('boss');
+  } else {
+    const n = Math.min(3, bf.n + (Math.random() < .5 ? 1 : 0));
+    for (let i = 0; i < n; i++) lasers.push({ x: clamp(10, LW - 10, player.x + (i ? (Math.random() - .5) * LW * .7 : 0)), t: .9, phase: 'warn' });
+    bf.quote = '차트 레이저 발사!';
+    A.play('warn');
+  }
+}
 function updateCeo(dt) {
   if (!bf) {
-    if (elapsed >= nextCeoAt) { nextCeoAt += 60; startCeo(); }
+    if (rewardT > 0 || storyRun) return;
+    const left = nextCeoAt - elapsed;
+    if (left <= 5) {
+      const sec = Math.ceil(left);
+      if (sec > 0 && sec !== bossBeep) { bossBeep = sec; A.play('warn'); }
+      if (left <= 0) { bossBeep = 0; startCeo(); }
+    }
     return;
   }
   bf.t += dt; bf.flash = Math.max(0, bf.flash - dt); bf.talk = Math.max(0, bf.talk - dt);
@@ -1337,20 +1751,23 @@ function updateCeo(dt) {
     bf.x = LW / 2 + Math.sin(bf.t * (.8 + bf.n * .15)) * (LW / 2 - 16);
     bf.y = ty + Math.sin(bf.t * 2.3) * 4;
     bf.atk -= dt;
-    if (bf.atk <= 0) {
-      bf.atk = Math.max(.45, 1.1 - bf.n * .12);
-      throwCeoBomb();
-      if (Math.random() < .25) { throwCeoBomb(-.35); throwCeoBomb(.35); }
-    }
+    if (bf.atk <= 0) { bf.atk = Math.max(.5, 1.15 - bf.n * .1); throwCeoBomb(); }
+    bf.special -= dt;
+    if (bf.special <= 0) { bf.special = Math.max(2.4, 4 - bf.n * .3); bossSpecial(); }
     if (bf.hp <= 0) {
       const bonus = 1000 + bf.n * 500;
       bonusPts += bonus; ceoKills++;
       bf.phase = 'down'; bf.t = 0; bf.quote = '크윽… 결재해 주지!'; bf.talk = 2;
-      floatText(LW / 2, LH * .38, `사장님 격파! +${bonus}`, '#ffd76a', 1.6);
+      floatText(LW / 2, LH * .36, `${map.boss.name} 격파! +${bonus}`, '#ffd76a', 1.6);
+      floatText(LW / 2, LH * .46, '🎁 보상 타임! 코인을 모아라', '#ffd76a', 1.3);
       shake = 12; flash = .7; A.play('ceoDown');
       for (const d of drops) if (d.kind === 'work' && !d.dead) explodeWork(d, false);
+      lasers = [];
+      rewardT = 8; spawnTimer = .3;
+      nextCeoAt = elapsed + 8 + BOSS_INTERVAL;
     } else if (bf.t > bf.time) {
       bf.phase = 'out'; bf.t = 0; bf.quote = '다음 분기에 두고 보자!'; bf.talk = 2;
+      nextCeoAt = elapsed + BOSS_INTERVAL;
       A.play('giveup');
     }
   } else if (bf.phase === 'out') {
@@ -1460,10 +1877,21 @@ function drawDrops(g, t) {
   const R = rect(g), blink = (t * 6 | 0) % 2;
   for (const d of drops) {
     let x = Math.round(d.x - d.w / 2), y = Math.round(d.y - d.h / 2);
+    if (d.kind === 'coin') {
+      g.drawImage(d.spr, x, y);
+      if (blink) R(x + 2, y + 2, 1, 1, '#ffffff');
+      continue;
+    }
     if (d.kind === 'work') {
-      // 💣 업무폭탄: 빨간 경고 오라 + 불붙은 심지
+      // 💣 업무폭탄: 움직임 유형별 색 오라 + 불붙은 심지
+      const mv = moveOf(d.mv);
+      if (d.mv === 'dive' && !d.dived) {
+        g.globalAlpha = blink ? .55 : .25;
+        for (let yy = y + d.h + 2; yy < LH - 4; yy += 4) R(d.x - 1, yy, 2, 2, '#ff4d5e');
+        g.globalAlpha = 1;
+      }
       if (d.id === 'phone') x += blink ? 1 : -1;
-      g.globalAlpha = .2 + .14 * Math.sin(t * 12 + d.x); R(x - 2, y - 2, d.w + 4, d.h + 4, '#ff2a2a'); g.globalAlpha = 1;
+      g.globalAlpha = .2 + .14 * Math.sin(t * 12 + d.x); R(x - 2, y - 2, d.w + 4, d.h + 4, mv ? mv.color : '#ff2a2a'); g.globalAlpha = 1;
       if (d.flash > 0) g.globalAlpha = .35;
       g.drawImage(d.spr, x, y);
       g.globalAlpha = 1;
@@ -1490,6 +1918,38 @@ function drawDrops(g, t) {
     }
   }
 }
+function drawGimmickBg(g) {
+  if (!gim || storyRun) return;
+  const R = rect(g);
+  if (map.id === 'fashion') {
+    const sp = gim.spot;
+    g.globalAlpha = .3; g.fillStyle = '#fff1a8';
+    g.beginPath(); g.moveTo(sp.x - 2, 8); g.lineTo(sp.x + 2, 8); g.lineTo(sp.x + 13, LH - 3); g.lineTo(sp.x - 13, LH - 3); g.closePath(); g.fill();
+    g.globalAlpha = .6; R(sp.x - 13, LH - 5, 26, 3, '#fff1a8');
+    g.globalAlpha = 1;
+  } else if (map.id === 'wall') {
+    const k = gim.mkt, x0 = 4, y0 = 34, w = LW - 8, h = 18, n = k.hist.length;
+    g.globalAlpha = .6; R(x0 - 1, y0 - 1, w + 2, h + 2, '#050505'); g.globalAlpha = 1;
+    const col = k.state === 'crash' ? '#ff4d5e' : k.state === 'bull' ? '#3ddc84' : '#ffd76a';
+    for (let i = 0; i < n; i++) R(x0 + i * (w - 2) / (n - 1), y0 + h - 1 - k.hist[i] / 100 * (h - 2), 2, 1, col);
+  }
+}
+function drawGimmickFg(g, t) {
+  if (!gim) return;
+  const R = rect(g), blink = (t * 6 | 0) % 2;
+  for (const b of gim.boxes) {
+    if (b.phase === 'warn') {
+      g.globalAlpha = .18; R(b.x - 12, 0, 24, LH - 6, '#ff4d5e'); g.globalAlpha = 1;
+      if (blink) R(b.x - 12, LH - 6, 24, 3, '#ff4d5e');
+    } else if (!(b.phase === 'stay' && b.t < 1 && blink)) g.drawImage(BOX_SPR, Math.round(b.x - 12), Math.round(b.y - 14));
+  }
+  for (const l of lasers) {
+    if (l.phase === 'warn') {
+      g.globalAlpha = blink ? .45 : .2; R(l.x - 3, 0, 6, LH, '#ff4d5e'); g.globalAlpha = 1;
+      for (let yy = 0; yy < LH; yy += 6) R(l.x, yy, 1, 3, '#ffffff');
+    } else { R(l.x - 4, 0, 8, LH, '#ff4d5e'); R(l.x - 2, 0, 4, LH, '#ffd76a'); R(l.x - 1, 0, 2, LH, '#ffffff'); }
+  }
+}
 
 function render() {
   const t = clock;
@@ -1507,6 +1967,7 @@ function render() {
   const cutscene = state === 'ending' || state === 'wipe';
   bgG.drawImage(bgCache, 0, 0);
   drawAmbient(bgG, t);
+  drawGimmickBg(bgG);
   drawBoss(bgG, map.id, LW - 20, layout.ft, boss.talk > 0, t, bossAway() || cutscene);
   ctx.drawImage(loBg, 0, 0, LW * S, LH * S);
   if (layout.banner) {
@@ -1520,20 +1981,24 @@ function render() {
   g.clearRect(0, 0, LW, LH);
   g.imageSmoothingEnabled = false;
   const gold = char.power > 1;
-  for (const b of bullets) { R(b.x - 1, b.y - 3, 3, 6, '#1a1a2e'); R(b.x, b.y - 2, 1, 4, gold ? '#ffd76a' : '#dfe6ee'); }
+  for (const b of bullets) { R(b.x - 1, b.y - 3, 3, 6, '#1a1a2e'); R(b.x, b.y - 2, 1, 4, gold ? '#ffd76a' : b.pierce > 0 ? '#8fd3ff' : '#dfe6ee'); }
 
+  let bossTop = 0;
   if (bf) {
-    const bx = Math.round(bf.x - 12), by = Math.round(bf.y - 13);
-    const spr = bf.flash > 0 ? CEO.white : (bf.phase === 'fight' && (t * 4 | 0) % 2) || bf.talk > 0 ? CEO.open : CEO.closed;
-    if (bf.phase === 'down') { g.save(); g.translate(bf.x, bf.y); g.rotate(Math.sin(t * 30) * .3); g.drawImage(spr, -12, -13); g.restore(); }
-    else g.drawImage(spr, bx, by);
+    const sp = map.boss.spr;
+    const spr = bf.flash > 0 ? sp.white : (bf.phase === 'fight' && (t * 4 | 0) % 2) || bf.talk > 0 ? sp.open : sp.closed;
+    const hw = spr.width / 2, hh = spr.height / 2;
+    bossTop = bf.y - hh;
+    if (bf.phase === 'down') { g.save(); g.translate(bf.x, bf.y); g.rotate(Math.sin(t * 30) * .3); g.drawImage(spr, -hw, -hh); g.restore(); }
+    else g.drawImage(spr, Math.round(bf.x - hw), Math.round(bf.y - hh));
     if (bf.phase === 'in' || bf.phase === 'fight') {
-      R(bf.x - 13, by - 6, 26, 4, '#1a1a2e');
-      R(bf.x - 12, by - 5, Math.max(0, Math.round(24 * bf.hp / bf.max)), 2, '#ff4d5e');
+      R(bf.x - 16, bossTop - 7, 32, 5, '#1a1a2e');
+      R(bf.x - 15, bossTop - 6, Math.max(0, Math.round(30 * bf.hp / bf.max)), 3, '#ff4d5e');
     }
   }
 
   drawDrops(g, t);
+  drawGimmickFg(g, t);
 
   if (bossAway() && !cutscene) {
     const bx = Math.round(chase.x), by = LH - 4, grab = chase.phase === 'grab';
@@ -1552,7 +2017,8 @@ function render() {
       g.drawImage(side ? spr.deadR : spr.deadL, -13, -28); g.restore();
     } else {
       if (invTime > 0) { g.globalAlpha = .35 + Math.sin(t * 16) * .15; R(px - 10, py - 28, 20, 29, '#8fd3ff'); g.globalAlpha = 1; }
-      else if (powerTime > 0) { g.globalAlpha = .3 + Math.sin(t * 14) * .1; R(px - 10, py - 27, 20, 28, '#ffd76a'); g.globalAlpha = 1; }
+      else if (powerTime > 0 || inSpot()) { g.globalAlpha = .3 + Math.sin(t * 14) * .1; R(px - 10, py - 27, 20, 28, '#ffd76a'); g.globalAlpha = 1; }
+      if (perks.shield > 0 && state !== 'menu') { g.globalAlpha = .5; R(px - 11, py - 30, 22, 1, '#8fd3ff'); R(px - 11, py - 30, 1, 30, '#8fd3ff'); R(px + 10, py - 30, 1, 30, '#8fd3ff'); g.globalAlpha = 1; }
       const running = state === 'menu' || player.moving;
       const f = running ? (animT * 12 | 0) % 4 : 0;
       if (!(invTime > 0 && invTime < 1 && (t * 12 | 0) % 2)) g.drawImage((side ? spr.R : spr.L)[f], px - 13, py - 28);
@@ -1571,13 +2037,19 @@ function render() {
   }
   ctx.drawImage(loFg, 0, 0, LW * S, LH * S);
 
-  // 버프 이름표
+  // 버프 이름표 · 업무폭탄 유형 표시
   const ls = Math.max(10, Math.round(S * 3));
   for (const d of drops) {
-    if (d.kind === 'work') continue;
+    if (d.kind === 'coin') continue;
+    if (d.kind === 'work') {
+      const mv = moveOf(d.mv);
+      if (mv && !d.split) text(mv.short, d.x * S, (d.y - d.h / 2 - 9) * S, ls, mv.color);
+      continue;
+    }
     const r = Math.ceil(Math.max(d.w, d.h) / 2) + 3;
     text(d.label, d.x * S, (d.y + r + 4) * S, ls, d.kind === 'food' ? '#7dff9a' : '#ffd76a');
   }
+  if (gim && state === 'play') for (const b of gim.boxes) if (b.phase === 'warn') text('⚠ 컨테이너!', b.x * S, (LH - 14) * S, ls + 2, '#ff6b6b');
   ctx.restore();
 
   if (state === 'play' && chase.phase !== 'idle') {
@@ -1590,8 +2062,8 @@ function render() {
       const ax = bossAway() ? chase.x : LW - 20, ay = bossAway() ? LH - 4 : layout.ft;
       drawBubble(boss.quote, ax, ay - 27);
     }
-    if (bf && bf.talk > 0) drawBubble(bf.quote, bf.x, bf.y + 14, true);
-    if (bf && bf.phase === 'fight') text(`사장님  ⏱${Math.max(0, bf.time - bf.t).toFixed(0)}s`, bf.x * S, (bf.y - 24) * S, ls, '#ffffff');
+    if (bf && bf.talk > 0) drawBubble(bf.quote, bf.x, bf.y + 16, true);
+    if (bf && bf.phase === 'fight') text(`${map.boss.name}  ⏱${Math.max(0, bf.time - bf.t).toFixed(0)}s`, bf.x * S, (bossTop - 12) * S, ls, '#ffffff');
   }
 
   for (const f of floaters) {
@@ -1599,6 +2071,24 @@ function render() {
     text(f.text, f.x * S, f.y * S, Math.round(S * 4.5 * f.size), f.color);
   }
   ctx.globalAlpha = 1;
+
+  // 보스 예고 / 보상 타임
+  if ((state === 'play' || state === 'perk') && !storyRun) {
+    const left = nextCeoAt - elapsed;
+    if (!bf && !rewardT && left <= 5 && left > 0) {
+      ctx.fillStyle = `rgba(255,40,40,${.18 + .15 * Math.sin(t * 14)})`;
+      ctx.fillRect(0, 0, W, 12); ctx.fillRect(0, H - 12, W, 12); ctx.fillRect(0, 0, 12, H); ctx.fillRect(W - 12, 0, 12, H);
+      ctx.fillStyle = 'rgba(10,8,20,.7)'; ctx.fillRect(0, H * .44 - 28, W, 56);
+      text(`⚠ ${map.boss.name} 등장까지 ${Math.ceil(left)}`, W / 2, H * .44, Math.round(S * 6), '#ff6b6b');
+    }
+    if (rewardT > 0) {
+      ctx.fillStyle = `rgba(255,200,40,${.16 + .1 * Math.sin(t * 10)})`;
+      ctx.fillRect(0, 0, W, 12); ctx.fillRect(0, H - 12, W, 12); ctx.fillRect(0, 0, 12, H); ctx.fillRect(W - 12, 0, 12, H);
+      ctx.fillStyle = 'rgba(10,8,20,.55)'; ctx.fillRect(0, H * .44 - 22, W, 44);
+      text(`🎁 보상 타임! 코인을 모아라 ${rewardT.toFixed(1)}`, W / 2, H * .44, Math.round(S * 4.5), '#ffd76a');
+    }
+  }
+
   if (state === 'play' && chase.phase === 'grab') text('←→ 좌우 연타로 뿌리치기!', W / 2, H * .55, Math.round(S * 5), '#ffffff');
   if (flash > 0) { ctx.fillStyle = `rgba(255,255,255,${flash * .6})`; ctx.fillRect(0, 0, W, H); }
 
@@ -1684,17 +2174,30 @@ function drawBoardBg() {
 const hudCache = {};
 const setText = (id, v) => { if (hudCache[id] !== v) { hudCache[id] = v; $(id).textContent = v; } };
 function updateHud() {
-  if (state !== 'play') return;
+  if (state !== 'play' && state !== 'perk') return;
   setText('score', score().toLocaleString());
   setText('time', elapsed.toFixed(1));
   setText('power', [
     invTime > 0 ? `🏖️${invTime.toFixed(1)}` : '',
     powerTime > 0 ? `☕${powerTime.toFixed(1)}` : '',
     fedTime > 0 ? `🍚x2 ${fedTime.toFixed(1)}` : '',
+    inSpot() ? '💡x2' : '',
+    map.id === 'wall' && !storyRun && gim.mkt.state === 'bull' ? '📈x2' : '',
+    map.id === 'wall' && !storyRun && gim.mkt.state === 'crash' ? '📉' : '',
   ].filter(Boolean).join(' '));
+  setText('perkRow', PERKS.filter(p => perks[p.id]).map(p => p.icon + (perks[p.id] > 1 ? perks[p.id] : '')).join(' '));
   const hard = chase.phase !== 'idle', full = Math.min(5, Math.floor(fullness));
-  setText('gauge', hard ? '🔥 HARD MODE' : bf ? '⚠ 사장님 보스전' : '배부름 ' + '■'.repeat(full) + '□'.repeat(5 - full));
-  $('gaugePill').classList.toggle('hard', hard || !!bf);
+  setText('gauge', hard ? '🔥 HARD MODE' : '배부름 ' + '■'.repeat(full) + '□'.repeat(5 - full));
+  $('gaugePill').classList.toggle('hard', hard);
+  const left = nextCeoAt - elapsed;
+  let bt;
+  if (storyRun) bt = `🎯 ${storyRun.goal}초 버티기`;
+  else if (rewardT > 0) bt = `🎁 보상 타임 ${rewardT.toFixed(1)}s`;
+  else if (bf) bt = `⚔ ${map.boss.name} HP ${Math.max(0, Math.ceil(bf.hp))}/${bf.max}`;
+  else bt = `👔 ${map.boss.name}까지 ${Math.max(0, Math.ceil(left))}초`;
+  setText('bossTxt', bt);
+  $('bossPill').classList.toggle('hard', !storyRun && (!!bf || (!rewardT && left <= 5)));
+  $('bossPill').classList.toggle('gold', rewardT > 0);
 }
 function refreshMute() { $('muteBtn').textContent = save.muted ? '♪ OFF' : '♪ ON'; }
 
@@ -1710,7 +2213,7 @@ function loop(now) {
 }
 
 // ================= 화면 전환 =================
-const SCREENS = ['home', 'idcard', 'mapsel', 'rank', 'over', 'storyHome', 'chapterCard', 'dialog', 'roundCard', 'resultCard', 'endingCard'];
+const SCREENS = ['perkCard', 'home', 'idcard', 'mapsel', 'rank', 'over', 'storyHome', 'chapterCard', 'dialog', 'roundCard', 'resultCard', 'endingCard'];
 function showScreen(id) {
   for (const s of SCREENS) $(s).classList.toggle('hidden', s !== id);
   const card = $(id).querySelector('.card');
@@ -1728,26 +2231,44 @@ function toMenuState() {
 function openHome() {
   toMenuState();
   $('badgeName').textContent = save.nick;
-  $('badgeChar').textContent = `${char.icon} ${char.name}`;
+  $('badgeChar').textContent = `${char.icon} ${char.name} · 캐릭터 ${CHARS.filter(charUnlocked).length}/${CHARS.length}`;
+  $('badgeTitle').textContent = save.title || '';
   drawCharPreview($('badgeCv'), char);
   $('bestAll').textContent = bestAll().toLocaleString();
   showScreen('home');
 }
 
 // 사원증 발급
-let pendingChar = char;
+let pendingChar = char, pendingTitle = save.title || '';
 function openIdCard() {
   toMenuState();
-  pendingChar = char;
+  pendingChar = char; pendingTitle = save.title || '';
   $('nickInput').value = save.nick;
   $('nickErr').textContent = '';
+  // 칭호
+  const owned = ownedTitles(), tbox = $('titles');
+  tbox.innerHTML = '';
+  $('titleCount').textContent = `${owned.length} / ${Object.keys(ENDING_TITLES).length} · 스토리 엔딩으로 획득`;
+  for (const t of ['', ...owned]) {
+    const b = document.createElement('button');
+    b.className = 'tchip' + (t === pendingTitle ? ' sel' : '');
+    b.textContent = t || '칭호 없음';
+    b.addEventListener('click', () => {
+      A.play('click'); pendingTitle = t;
+      for (const el of tbox.children) el.classList.toggle('sel', el === b);
+    });
+    tbox.append(b);
+  }
+  // 캐릭터
   const box = $('chars');
   box.innerHTML = '';
+  $('charCount').textContent = `${CHARS.filter(charUnlocked).length} / ${CHARS.length} 해금`;
   for (const c of CHARS) {
+    const open = charUnlocked(c);
     const btn = document.createElement('button');
-    btn.className = 'char' + (c === pendingChar ? ' sel' : '');
+    btn.className = 'char' + (c === pendingChar ? ' sel' : '') + (open ? '' : ' locked');
     const cv = document.createElement('canvas'); cv.width = 26; cv.height = 30; drawCharPreview(cv, c);
-    const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = `${c.icon} ${c.name}`;
+    const nm = document.createElement('div'); nm.className = 'nm'; nm.textContent = open ? `${c.icon} ${c.name}` : `🔒 ${c.name}`;
     const ds = document.createElement('div'); ds.className = 'ds'; ds.textContent = c.desc;
     btn.append(cv, nm, ds);
     ['이동', '연사', '공격'].forEach((label, i) => {
@@ -1757,7 +2278,9 @@ function openIdCard() {
       for (let j = 0; j < 5; j++) { const b = document.createElement('i'); if (j < c.stats[i]) b.className = 'on'; bar.append(b); }
       row.append(l, bar); btn.append(row);
     });
+    if (!open) { const lk = document.createElement('div'); lk.className = 'lock'; lk.textContent = `📖 ${c.hint}`; btn.append(lk); }
     btn.addEventListener('click', () => {
+      if (!open) { A.play('deny'); $('nickErr').textContent = `🔒 ${c.name}: 스토리 모드 ${c.hint}`; return; }
       A.play('click'); pendingChar = c;
       for (const el of box.children) el.classList.remove('sel');
       btn.classList.add('sel');
@@ -1773,7 +2296,7 @@ function confirmId() {
   const nick = $('nickInput').value.trim().replace(/\s+/g, ' ');
   if (!nick) { $('nickErr').textContent = '닉네임을 적어 주세요!'; A.play('deny'); return; }
   if ([...nick].length > 8) { $('nickErr').textContent = '닉네임은 8글자까지예요.'; A.play('deny'); return; }
-  save.nick = nick; save.char = pendingChar.id; char = pendingChar; persist();
+  save.nick = nick; save.char = pendingChar.id; save.title = pendingTitle; char = pendingChar; persist();
   A.play('coin');
   openHome();
 }
@@ -1794,7 +2317,7 @@ function buildMapCards() {
     tg.drawImage(SPRITES.daeri.R[1], 30, 52);
     const info = document.createElement('div');
     info.innerHTML = `<div class="nm"></div><div class="ds"></div><div class="rt"></div>`;
-    info.querySelector('.ds').textContent = m.desc;
+    info.querySelector('.ds').textContent = `${m.desc} · ${m.gimmick}`;
     btn.append(thumb, info);
     btn.addEventListener('click', () => selectMap(m));
     box.append(btn);
@@ -1883,7 +2406,7 @@ async function showBoard() {
   const rows = [
     ['기본급', `${char.name} · 근무 ${elapsed.toFixed(1)}초`, money(timeP * map.rate)],
     ['성과급', `업무 격파 ${kills}건 (든든 보너스 포함)`, money(killPts * map.rate)],
-    ['특별 상여금', `사장님 격파 ${ceoKills}회`, money(bonusPts * map.rate), bonusPts ? 'plus' : ''],
+    ['특별 상여금', `${map.boss.name} 격파 ${ceoKills}회 · 보너스`, money(bonusPts * map.rate), bonusPts ? 'plus' : ''],
     ['식대 공제', `구내식당 ${meals}끼 · 커피 ${coffees}잔`, money(-mealCost), 'minus'],
     ['야근수당', '포괄임금제', `${money(0)} (미지급)`, 'minus'],
   ];
@@ -1927,7 +2450,7 @@ async function showBoard() {
   showScreen('over');
 
   // 랭킹 등록
-  const entry = { id: Date.now() + '-' + Math.random().toString(36).slice(2, 7), n: save.nick, c: char.id, s: pts, d: new Date().toISOString() };
+  const entry = { id: Date.now() + '-' + Math.random().toString(36).slice(2, 7), n: save.nick, c: char.id, t: save.title || '', s: pts, d: new Date().toISOString() };
   lastEntry = entry;
   $('rankLine').textContent = '랭킹 집계 중…';
   $('overRankTitle').textContent = `🏆 ${map.name} TOP 5`;
@@ -3001,6 +3524,32 @@ const CHAPTERS = {
 const CH_ORDER = Object.keys(CHAPTERS);
 const chUnlocked = c => !c.unlock || c.unlock.some(id => (save.endings || []).includes(id));
 const CHP = () => CHAPTERS[(story && story.ch) || 'ch1'];
+[['r1', 0], ['r2', 1], ['r2b', 1], ['r3', 2], ['r4', 3], ['r5', 4]].forEach(([k, i]) => { NODES[k].stage = i; });
+[['q1', 0], ['q2', 1], ['q3', 2], ['q4', 3], ['q5', 4]].forEach(([k, i]) => { NODES2[k].stage = i; });
+Object.assign(CHAPTERS.ch1, {
+  stages: ['자소서', '프로젝트', 'PT 발표', '거래처 미팅', '노조'],
+  flow: [['c1', '자소서를 어떻게 쓸까?'], ['c2', '첫 프로젝트, 혼자? 같이?'], ['c3', '발표 자료 스타일'], ['c4', '거래처 앞에서의 태도'], ['c5', '노조 가입 권유'], ['scout', '스카우트 제안']],
+});
+Object.assign(CHAPTERS.ch2p, {
+  stages: ['요구사항', '일정', '협업', '중간 보고', '런칭'],
+  flow: [['p1', '킥오프 방식'], ['p2', '일정 협상'], ['p3', '협업 방식'], ['p4', '사장님의 방향 변경'], ['p5', 'D-day 근무 방식'], ['startup', '창업 제안']],
+});
+function renderSteps(el, cur) {
+  el.innerHTML = '';
+  CHP().stages.forEach((name, i) => {
+    const r = story.done && story.done[i], sp = document.createElement('span');
+    sp.className = 'step' + (r ? ' ' + r : '') + (i === cur ? ' cur' : '');
+    sp.textContent = `${r === 'win' ? '✔' : r === 'lose' ? '✖' : i + 1} ${name}`;
+    el.append(sp);
+  });
+}
+function storyFrom(chId, node) {
+  const snap = save.cp && save.cp[chId] && save.cp[chId][node];
+  if (!snap) return;
+  A.init();
+  story = { ch: chId, node, flags: { ...snap.flags }, rank: snap.rank, round: snap.round, done: { ...(snap.done || {}) } };
+  goNode(node);
+}
 
 // ---------- 진행 ----------
 let story = null, dlg = null, mini = null, storyRun = null, storyPrev = null, pendingRound = null, pendingNext = null;
@@ -3050,6 +3599,18 @@ function openChapter(id) {
     list.append(li);
   }
   $('edTotal').textContent = `${keys.filter(k => seen.includes(k)).length} / ${keys.length}`;
+  const fl = $('flowList'), cps = (save.cp || {})[id] || {};
+  fl.innerHTML = '';
+  c.flow.forEach(([node, label], i) => {
+    const li = document.createElement('li');
+    if (cps[node]) {
+      const b = document.createElement('button');
+      b.textContent = `${i + 1}. ${label} ▶ 여기서 시작`;
+      b.addEventListener('click', () => { A.play('click'); storyFrom(id, node); });
+      li.append(b);
+    } else { li.className = 'locked'; li.textContent = `${i + 1}. ??? (아직 도달하지 않은 분기점)`; }
+    fl.append(li);
+  });
   $('stCont').classList.toggle('hidden', !(save.story && save.story.node && (save.story.ch || 'ch1') === id));
   showScreen('chapterCard');
 }
@@ -3060,7 +3621,7 @@ function storyStart(id, resume) {
     story = save.story; story.ch = id;
   } else {
     const flags = c.startFlags ? c.startFlags() : {};
-    story = { ch: id, node: c.start, flags, rank: flags.ace ? 1 : 0, round: 0 };
+    story = { ch: id, node: c.start, flags, rank: flags.ace ? 1 : 0, round: 0, done: {} };
   }
   goNode(story.node);
 }
@@ -3072,6 +3633,11 @@ function goNode(id) {
   story.node = id; save.story = story; persist();
   if (n.round) return showRoundCard(n);
   if (n.set) Object.assign(story.flags, n.set);
+  if (n.choices) {
+    const cp = save.cp = save.cp || {};
+    (cp[story.ch] = cp[story.ch] || {})[id] = { flags: { ...story.flags }, rank: story.rank, round: story.round, done: { ...(story.done || {}) } };
+    persist();
+  }
   sceneKind = n.scene;
   playDialog(typeof n.lines === 'function' ? n.lines(story.flags) : n.lines, n.choices, () => goNode(n.next));
 }
@@ -3168,7 +3734,8 @@ function showRoundCard(n) {
   pendingRound = n;
   sceneKind = def.scene;
   state = 'story';
-  $('rcRound').textContent = `ROUND ${story.round} · 현재 직급: ${CHP().ranks[story.rank]}`;
+  $('rcHead').textContent = `STAGE ${n.stage + 1} / ${CHP().stages.length} · 현재 직급: ${CHP().ranks[story.rank]}`;
+  renderSteps($('rcSteps'), n.stage);
   $('rcIcon').textContent = def.icon;
   $('rcTitle').textContent = def.title;
   $('rcDesc').textContent = typeof def.desc === 'function' ? def.desc(story.flags) : def.desc;
@@ -3242,21 +3809,38 @@ function endStoryDodge(win) {
   finishRound(win, '업무폭탄에 맞았다… 결국 뻗어 버렸다');
 }
 function finishRound(win, reason) {
-  const n = pendingRound;
+  const n = pendingRound, c = CHP();
   state = 'story'; mini = null;
   A.stopMusic();
-  const from = CHP().ranks[story.rank];
-  if (win) story.rank = Math.min(CHP().ranks.length - 1, story.rank + 1);
+  const from = c.ranks[story.rank];
+  if (win) story.rank = Math.min(c.ranks.length - 1, story.rank + 1);
+  story.done = story.done || {};
+  story.done[n.stage] = win ? 'win' : 'lose';
   save.story = story; persist();
+  const nextStage = c.stages[n.stage + 1];
+  $('rsHead').textContent = `STAGE ${n.stage + 1} / ${c.stages.length} 결과 · ${MINI[n.round].title}`;
   $('rsIcon').textContent = win ? '🎉' : '💥';
-  $('rsTitle').textContent = win ? '라운드 클리어!' : '라운드 실패…';
+  $('rsTitle').textContent = win ? '스테이지 클리어!' : '스테이지 실패…';
   $('rsBody').textContent = win
-    ? (from === CHP().ranks[story.rank] ? `📛 ${from} 유지` : `📛 진급! ${from} ▶ ${CHP().ranks[story.rank]}`)
+    ? (from === c.ranks[story.rank] ? `📛 ${from} 유지` : `📛 진급! ${from} ▶ ${c.ranks[story.rank]}`)
     : (reason || '아쉽지만 실패…');
-  $('rsSub').textContent = win ? '다음 이야기로 넘어가요' : '실패해도 이야기는 계속돼요… 아마도?';
+  renderSteps($('rsSteps'), -1);
+  $('rsSub').textContent = win
+    ? (nextStage ? `다음 스테이지: ${n.stage + 2}. ${nextStage}` : '마지막 스테이지 통과! 이제 결과 발표만 남았어요.')
+    : '다시 도전하거나, 실패한 채로 이야기를 이어갈 수 있어요.';
   pendingNext = win ? n.win : n.lose;
+  const next = $('rsNext');
+  next.textContent = win ? (nextStage ? '다음 스테이지로 ▶' : '결과 발표 보러 가기 ▶') : '그대로 진행 ▶ (다른 이야기로)';
+  next.className = 'pbtn wide' + (win ? '' : ' alt');
+  $('rsRetry').classList.toggle('hidden', win);
   showScreen('resultCard');
   if (win) A.play('coin');
+}
+function retryRound() {
+  if (!pendingRound) return;
+  pendingNext = null;
+  A.play('click');
+  startRound();
 }
 function goNext() {
   if (!pendingNext) return;
@@ -3268,18 +3852,29 @@ function goNext() {
 function showEnding(id) {
   const c = CHP(), e = c.endings[id], keys = Object.keys(c.endings);
   const before = CH_ORDER.filter(k => chUnlocked(CHAPTERS[k]));
+  const charsBefore = CHARS.filter(charUnlocked).map(x => x.id);
   story.node = null; save.story = null;
   const seen = save.endings = save.endings || [];
   const isNew = !seen.includes(id);
   if (isNew) seen.push(id);
   persist();
   const newly = CH_ORDER.filter(k => !before.includes(k) && chUnlocked(CHAPTERS[k])).map(k => CHAPTERS[k]);
+  edReward = {
+    title: ENDING_TITLES[id], isNew,
+    newChars: CHARS.filter(x => charUnlocked(x) && !charsBefore.includes(x.id)),
+    related: CHARS.filter(x => x.unlock && x.unlock.includes(id)),
+  };
   const leads = CH_ORDER.map(k => CHAPTERS[k]).filter(ch => ch.unlock && ch.unlock.includes(id));
   sceneKind = e.scene;
   playDialog(e.lines, null, () => {
     state = 'story';
     A.stopMusic();
     $('edNo').textContent = `${c.title} · ENDING #${e.no}${isNew ? ' · 🆕 새 엔딩!' : ''}`;
+    const gift = $('edGift');
+    gift.classList.remove('hidden', 'shake');
+    gift.textContent = isNew ? '🎁 엔딩 보상 도착! — 터치해서 열기' : '🎁 이 엔딩의 보상 확인하기';
+    $('edRewards').classList.add('hidden');
+    $('edRewards').innerHTML = '';
     $('edIcon').textContent = e.icon;
     $('edTitle').textContent = e.title;
     $('edText').textContent = fmt(e.text);
@@ -3298,6 +3893,40 @@ function showEnding(id) {
     A.play(e.good ? 'unlock' : 'over');
     if (newly.length) setTimeout(() => A.play('unlock'), 700);
   });
+}
+
+let edReward = null;
+function openGift() {
+  const gift = $('edGift');
+  if (!edReward || gift.classList.contains('shake')) return;
+  gift.classList.add('shake');
+  A.play('stamp');
+  setTimeout(() => {
+    gift.classList.add('hidden');
+    const box = $('edRewards');
+    box.innerHTML = '';
+    const chars = edReward.newChars.length ? edReward.newChars : edReward.related;
+    for (const c of chars) {
+      const row = document.createElement('div');
+      row.className = 'reward';
+      const cv = document.createElement('canvas'); cv.width = 26; cv.height = 30; drawCharPreview(cv, c);
+      const tx = document.createElement('div');
+      tx.textContent = `${edReward.newChars.includes(c) ? '🔓 캐릭터 해금!' : '✔ 해금된 캐릭터'} ${c.icon} ${c.name}`;
+      const sm = document.createElement('small'); sm.textContent = `${c.desc} · 무한 모드 사원증에서 선택`;
+      tx.append(sm); row.append(cv, tx); box.append(row);
+    }
+    if (edReward.title) {
+      const row = document.createElement('div');
+      row.className = 'reward';
+      const ic = document.createElement('div'); ic.className = 'big'; ic.textContent = '🏷️';
+      const tx = document.createElement('div');
+      tx.textContent = `${edReward.isNew ? '새 칭호 획득!' : '획득한 칭호'} 「${edReward.title}」`;
+      const sm = document.createElement('small'); sm.textContent = '사원증 수정에서 장착하면 랭킹에 표시돼요';
+      tx.append(sm); row.append(ic, tx); box.append(row);
+    }
+    box.classList.remove('hidden');
+    A.play('unlock');
+  }, 520);
 }
 
 function renderStory() {
@@ -3348,6 +3977,10 @@ window.addEventListener('keydown', e => {
     if (k === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); confirmId(); }
     return;
   }
+  if (!$('notice').classList.contains('hidden')) {
+    if (k === 'Enter' || k === 'Escape' || k === ' ') { e.preventDefault(); $('noticeOk').click(); }
+    return;
+  }
   if (k === 'ArrowLeft') { keys.left = true; e.preventDefault(); }
   if (k === 'ArrowRight') { keys.right = true; e.preventDefault(); }
   if (k === ' ') { keys.fire = true; e.preventDefault(); }
@@ -3368,6 +4001,9 @@ window.addEventListener('keydown', e => {
     } else if (visible('roundCard') && (k === 'Enter' || k === ' ')) startRound();
     else if (visible('resultCard') && (k === 'Enter' || k === ' ')) goNext();
     else if (visible('endingCard') && k === 'Escape') openChapter(story.ch);
+  } else if (state === 'perk') {
+    if (k === 'ArrowLeft') takePerk(0);
+    if (k === 'ArrowRight') takePerk(1);
   } else if (state === 'play') {
     if (k === 'ArrowLeft' || k === 'ArrowRight') mash();
   } else if (state === 'menu') {
@@ -3428,13 +4064,36 @@ $('dialog').addEventListener('click', advanceDialog);
 $('dlgSkip').addEventListener('click', e => { e.stopPropagation(); skipDialog(); });
 $('rcStart').addEventListener('click', startRound);
 $('rsNext').addEventListener('click', goNext);
+$('rsRetry').addEventListener('click', retryRound);
+$('edGift').addEventListener('click', openGift);
+$('edFlow').addEventListener('click', () => { A.play('click'); openChapter(story.ch); });
 $('edRetry').addEventListener('click', () => { A.play('click'); storyStart(story.ch, false); });
-$('edMenu').addEventListener('click', () => { A.play('click'); openChapter(story.ch); });
+$('edMenu').addEventListener('click', () => { A.play('click'); openStoryHome(); });
 canvas.addEventListener('mousedown', e => {
   if (state !== 'mini') return;
   const r = canvas.getBoundingClientRect();
   miniPress(e.clientX - r.left < r.width / 2 ? -1 : 1);
 });
+
+// ================= 업데이트 안내 =================
+const NOTICE_VER = '2.0.1';
+function showNotice(force) {
+  if (!force && save.noticeSeen === NOTICE_VER) return;
+  $('noticeHide').checked = save.noticeSeen === NOTICE_VER;
+  const n = $('notice');
+  n.classList.remove('hidden');
+  n.scrollTop = 0;
+  const card = n.querySelector('.card');
+  card.classList.remove('pop'); void card.offsetWidth; card.classList.add('pop');
+}
+$('noticeOk').addEventListener('click', () => {
+  A.play('click');
+  if ($('noticeHide').checked) save.noticeSeen = NOTICE_VER;
+  else if (save.noticeSeen === NOTICE_VER) delete save.noticeSeen;
+  persist();
+  $('notice').classList.add('hidden');
+});
+$('openNotice').addEventListener('click', () => { A.play('click'); showNotice(true); });
 
 // ================= 시작 =================
 window.addEventListener('resize', resize);
@@ -3444,6 +4103,7 @@ reset();
 buildMapCards();
 refreshMute();
 if (save.nick) openHome(); else openIdCard();
+showNotice(false);
 if (document.fonts) document.fonts.ready.then(() => { for (const k in hudCache) delete hudCache[k]; });
 requestAnimationFrame(loop);
 })();
