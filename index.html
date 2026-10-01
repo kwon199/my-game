@@ -305,6 +305,13 @@
   #hud.playing ~ #timeHud { visibility: visible; }
   #timeHud #power { font-size: 13px; }
   #timeHud #power:empty { display: none; }
+  #pad { position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 3; display: flex; gap: 10px; }
+  .padbtn {
+    flex: 1; height: 76px; font-family: inherit; font-size: 20px; color: #fff; cursor: pointer;
+    background: rgba(16, 18, 34, .5); border: 3px solid rgba(255, 255, 255, .75); box-shadow: 3px 3px 0 rgba(0, 0, 0, .45);
+    touch-action: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+  .padbtn.down { background: rgba(242, 194, 48, .92); color: #1a1a2e; border-color: #fff; box-shadow: none; transform: translate(3px, 3px); }
 </style>
 </head>
 <body>
@@ -320,6 +327,7 @@
     </div>
   </div>
 
+  <div id="pad" class="hidden"><button id="padL" class="padbtn">◀</button><button id="padR" class="padbtn">▶</button></div>
   <div id="timeHud"><div id="power"></div><div>⏱ <span id="time">0.0</span>s</div></div>
 
   <!-- 홈 -->
@@ -1423,7 +1431,10 @@ function burst(x, y, colors, n = 12, spd = 60) {
     particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 20, life: .6, c: colors[i % colors.length], sz: Math.random() < .3 ? 2 : 1 });
   }
 }
-const floatText = (x, y, text, color, size = 1) => floaters.push({ x, y, text, color, size, life: 1.1 });
+const floatText = (x, y, text, color, size = 1, life = 1.1) => floaters.push({ x, y, text, color, size, life });
+// 휴대폰: 화면을 좌우로 드래그하면 손가락이 움직인 만큼 캐릭터가 따라간다
+const drag = { target: null, sx: 0, px: 0 };
+const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 const BOOM = ['#ffd76a', '#ff8a2a', '#ff4d5e', '#ffffff'];
 
 function explodeWork(d, withPts) {
@@ -1550,9 +1561,17 @@ function update(dt) {
 
   // 이동
   const dir = (keys.right || touch.right ? 1 : 0) - (keys.left || touch.left ? 1 : 0);
-  player.moving = dir !== 0;
-  if (dir) player.face = dir;
-  player.x += dir * LW * (.75 + Math.min(elapsed, 150) * .004) * char.speed * (1 + perks.speed * .15) * (chase.phase === 'grab' ? .3 : 1) * dt;
+  const spd = LW * (.75 + Math.min(elapsed, 150) * .004) * char.speed * (1 + perks.speed * .15) * (chase.phase === 'grab' ? .3 : 1);
+  if (drag.target !== null && !dir) {
+    const dx = drag.target - player.x, step = spd * 1.6 * dt;
+    player.x += clamp(-step, step, dx);
+    player.moving = Math.abs(dx) > .6;
+    if (player.moving) player.face = dx > 0 ? 1 : -1;
+  } else {
+    player.moving = dir !== 0;
+    if (dir) player.face = dir;
+    player.x += dir * spd * dt;
+  }
   for (const b of gim.boxes) if (b.phase === 'stay' && Math.abs(player.x - b.x) < 16) player.x = player.x < b.x ? b.x - 16 : b.x + 16;
   player.x = clamp(7, LW - 7, player.x);
   updateChase(dt);
@@ -2413,6 +2432,7 @@ const drawCharPreview = (cv, c) => { const g = cv.getContext('2d'); g.clearRect(
 
 function toMenuState() {
   dlg = null; mini = null;
+  showPad(null); dragEnd();
   restoreStoryDodge();
   if (state !== 'menu') { state = 'menu'; A.stopMusic(); reset(); }
   $('hud').classList.remove('playing');
@@ -2532,7 +2552,7 @@ function buildMapCards() {
   }
   const how = makePage('게임 방법');
   how.innerHTML = `<div class="sub-title">❓ 게임 방법</div><div class="howto">
-    <b>이동</b> ← → (휴대폰은 화면 좌우 터치) · <b>📎 클립</b> 자동 발사, 스페이스로 속사<br>
+    <b>이동</b> ← → · 휴대폰은 화면을 좌우로 <b>드래그</b> · <b>📎 클립</b> 자동 발사, 스페이스로 속사<br>
     <b>💣 업무폭탄</b>: 심지 달린 것! 30초마다 지그재그·급강하·분열·추적 유형이 추가돼요<br>
     <b>✨ 버프</b>: 방울 속 — 점심밥 든든 · 커피 3연발 · 🏖️ 연차 무적 · 📋 결재도장<br>
     <b>📈 진급 보너스</b>: 30초마다 강화 2개 중 하나 선택<br>
@@ -2630,6 +2650,8 @@ function startGame() {
   setText('mapLbl', `${map.name} · ${char.name}`);
   A.tempo = 1;
   A.startMusic(map.song);
+  dragEnd();
+  if (isTouch) floatText(LW / 2, LH * .55, '👆 화면을 좌우로 드래그해서 이동', '#ffffff', 1, 2.8);
 }
 
 // ================= 점수판 (급여명세서 + 랭킹) =================
@@ -2834,6 +2856,13 @@ function scene(kind) {
 // ---------- 미니게임 공통 ----------
 function moveRunner(m, dt, speed) {
   const dir = (keys.right || touch.right ? 1 : 0) - (keys.left || touch.left ? 1 : 0);
+  if (drag.target !== null && !dir) {
+    const dx = drag.target - m.x, step = LW * speed * 1.6 * dt;
+    m.x = Math.max(7, Math.min(LW - 7, m.x + clamp(-step, step, dx)));
+    m.moving = Math.abs(dx) > .6;
+    if (m.moving) m.face = dx > 0 ? 1 : -1;
+    return;
+  }
   m.moving = dir !== 0;
   if (dir) m.face = dir;
   m.x = Math.max(7, Math.min(LW - 7, m.x + dir * LW * speed * dt));
@@ -2935,7 +2964,7 @@ const MINI = {
   essay: {
     title: '자기소개서 쓰기', icon: '📝', scene: 'room', song: () => ({ ...STORY_SONG, bpm: 128 }),
     desc: f => (f.copy ? '복붙한 자소서라 좋은 문장이 술술 나와요(?) ' : '') + '떨어지는 초록 키워드는 받고, 빨간 망한 문장은 피하세요! 25초 안에 완성도 100%면 서류 합격!',
-    controls: '← → 이동 (휴대폰: 화면 좌우 터치)',
+    controls: '← → 이동 (휴대폰: 화면을 좌우로 드래그)',
     create: f => ({ dur: 25, gauge: 0, words: [], spawn: 0, x: LW / 2, face: 1, moving: false, good: f.copy ? .72 : .55, slow: f.copy ? .8 : 1 }),
     update(m, dt) {
       moveRunner(m, dt, .9);
@@ -2969,7 +2998,7 @@ const MINI = {
   project: {
     title: '프로젝트 진행하기', icon: '🗂️', scene: 'work', song: () => MAPS[0].song,
     desc: f => (f.team ? '박대리님이 가끔 도와줘요! ' : '혼자라서 업무가 4개예요! ') + '업무 게이지가 계속 줄어요. 책상 앞에 서 있으면 그 업무가 진행돼요. 25초 동안 하나도 펑크 내지 마세요!',
-    controls: '← → 책상 사이 이동',
+    controls: '← → 책상 사이 이동 (휴대폰: 좌우로 드래그)',
     create(f) {
       const n = f.eager ? 4 : 3;
       return {
@@ -3031,7 +3060,7 @@ const MINI = {
   pt: {
     title: 'PT 발표하기', icon: '📊', scene: 'meeting',
     desc: f => (f.flashy ? '화려한 PPT라 화살표가 많고 빨라요! ' : '') + '슬라이드 화살표가 노란 선에 닿을 때 같은 방향을 누르세요! 끝났을 때 청중 반응 60% 이상이면 발표 성공!',
-    controls: '← → 타이밍 맞춰 누르기 (휴대폰: 화면 좌우 터치)',
+    controls: '← → 타이밍 맞춰 누르기 (휴대폰: 아래 ◀ ▶ 버튼)',
     create(f) {
       const bpm = f.flashy ? 128 : 108, beat = 60 / bpm, notes = [];
       for (let b = 4; b < 4 + Math.floor(20 / beat); b++) {
@@ -3155,7 +3184,7 @@ const MINI = {
   union: {
     title: '노조랑 열 올리기', icon: '✊', scene: 'work', song: () => MAPS[2].song,
     desc: '← → 를 번갈아 연타해서 줄다리기에서 이기세요! 강위원장이 억지 주장을 외칠 땐 화면에 뜬 방향을 눌러 반박해야 크게 밀어낼 수 있어요. 같은 키만 누르면 오히려 밀리고, 마지막 5초엔 강위원장이 폭주해요!',
-    controls: '← → 번갈아 연타 + 억지 주장엔 표시된 방향으로 반박',
+    controls: '← → 번갈아 연타 + 억지 주장엔 표시된 방향으로 반박 (휴대폰: 아래 버튼)',
     create: () => ({ dur: 20, m: 0, last: 0, surge: 0, surgeT: 2.2, need: 0, shout: '', shoutT: 0, arg: '', argT: 0, ux: 0, px: 0 }),
     update(m, dt) {
       const rage = m.t > 15 ? 1.5 : 1;
@@ -3219,7 +3248,7 @@ const MINI = {
   overtime: {
     title: '야근 버티기', icon: '🌙', scene: 'office', dodge: true, goal: () => 30,
     desc: '쏟아지는 업무폭탄을 30초 동안 버티세요! 클립으로 격파할 수 있고, 버프도 그대로 쓸 수 있어요.',
-    controls: '← → 이동 · 📎 클립 자동 발사 (스페이스 속사)',
+    controls: '← → 또는 좌우 드래그로 이동 · 📎 클립 자동 발사',
   },
 };
 
@@ -3468,7 +3497,7 @@ Object.assign(MINI, {
   gantt: {
     title: '일정 짜기 (간트차트)', icon: '📅', scene: 'meeting', song: () => MAPS[0].song,
     desc: f => (f.yes ? '"2주 안에" 하기로 해서 빈칸이 좁고 블록이 빨라요! ' : '') + '업무 블록이 좌우로 움직여요. 일정표의 노란 점선 칸에 맞춰 ← 또는 → 를 눌러 내려놓으세요! 8개 중 6개 이상 성공.',
-    controls: '← 또는 → 누르기 = 블록 내려놓기',
+    controls: '← 또는 → 누르기 = 블록 내려놓기 (휴대폰: 아래 버튼)',
     create(f) {
       const w = f.yes ? .16 : .24;
       const rows = GANTT_TASKS.map(name => ({ name, w, gx: .04 + Math.random() * (.92 - w), placed: null, good: false }));
@@ -3511,13 +3540,13 @@ Object.assign(MINI, {
   mailbomb: {
     title: '협업 메일 폭탄', icon: '📧', scene: 'office', dodge: true, goal: f => (f.mail ? 40 : 30),
     desc: f => (f.mail ? '메일로 하나하나 답하느라 40초를 버텨야 해요! ' : '합동 회의 덕분에 30초만 버티면 돼요! ') + '디자인팀·개발팀 메일이 폭탄처럼 쏟아져요. 피하거나 클립으로 격파하며 버티세요!',
-    controls: '← → 이동 · 📎 클립 자동 발사 (스페이스 속사)',
+    controls: '← → 또는 좌우 드래그로 이동 · 📎 클립 자동 발사',
   },
 
   launch: {
     title: '런칭 D-day', icon: '🚀', scene: 'work', song: () => MAPS[2].song,
     desc: f => (f.shift ? '교대 근무 동료가 가끔 불을 꺼 줘요! ' : '') + '서버·고객 클레임·사장님 전화, 세 곳에서 동시에 불이 나요! 불난 곳 앞에 서 있으면 진화돼요. 불이 커져 터지면 경고 1회, 3회면 실패! 30초 버티면 런칭 성공!',
-    controls: '← → 이동 (불난 곳 앞에 서 있기)',
+    controls: '← → 이동 (휴대폰: 좌우로 드래그) · 불난 곳 앞에 서 있기',
     create: f => ({
       dur: 30, x: LW / 2, face: 1, moving: false, strikes: 0, help: !!f.shift, helpT: 7, spawnT: 1.2,
       stations: [['서버', .18], ['고객 클레임', .5], ['사장님 전화', .82]].map(([name, px]) => ({ name, x: LW * px, fire: 0, prog: 0 })),
@@ -3606,6 +3635,14 @@ MINI.pt2 = {
     return { notes, meter: 50, combo: 0, flash: [0, 0], end: notes[notes.length - 1].time + 1.2, song: { ...MAPS[2].song, bpm }, goal: f.persuade ? 65 : 55, twist: twistBeat * beat - 1.5 };
   },
 };
+
+// 이동형 미니게임은 드래그, 버튼형 미니게임은 화면 버튼
+Object.assign(MINI.essay, { drag: true });
+Object.assign(MINI.project, { drag: true });
+Object.assign(MINI.launch, { drag: true });
+MINI.pt.pad = MINI.pt2.pad = ['◀', '▶'];
+MINI.union.pad = ['◀ 당겨!', '당겨! ▶'];
+MINI.gantt.pad = ['⬇ 내려놓기', '⬇ 내려놓기'];
 
 const RANKS2 = ['신입 사원', '실무 담당', '서브 PM', 'PM 대행', '프로젝트 리더', '팀장 후보'];
 const NODES2 = {
@@ -4023,6 +4060,8 @@ function startMini(type) {
   keys.left = keys.right = false; touch.left = touch.right = false;
   state = 'mini';
   for (const s of SCREENS) $(s).classList.add('hidden');
+  showPad(def);
+  dragEnd();
   A.stopMusic();
 }
 function updateMini(dt) {
@@ -4044,7 +4083,22 @@ function updateMini(dt) {
   }
 }
 function miniPress(dir) {
+  if (state === 'mini' && mini && mini.def.pad) flashPad(dir);
   if (state === 'mini' && mini && !mini.done && mini.m.t >= 0 && mini.def.press) mini.def.press(mini.m, dir);
+}
+// 누른 버튼을 잠깐 노랗게
+const padTimers = {};
+function flashPad(dir) {
+  const el = $(dir < 0 ? 'padL' : 'padR');
+  el.classList.add('down');
+  clearTimeout(padTimers[dir]);
+  padTimers[dir] = setTimeout(() => el.classList.remove('down'), 130);
+}
+function showPad(def) {
+  const pad = $('pad');
+  if (!def || !def.pad) { pad.classList.add('hidden'); return; }
+  $('padL').textContent = def.pad[0]; $('padR').textContent = def.pad[1];
+  pad.classList.remove('hidden');
 }
 function startStoryDodge(def) {
   storyPrev = { map, char };
@@ -4058,6 +4112,8 @@ function startStoryDodge(def) {
   $('hud').classList.add('playing');
   setText('mapLbl', `${def.icon} ${def.title} · ${goal}초 목표`);
   A.tempo = 1; A.startMusic(map.song);
+  dragEnd();
+  if (isTouch) floatText(LW / 2, LH * .55, '👆 화면을 좌우로 드래그해서 이동', '#ffffff', 1, 2.8);
 }
 function restoreStoryDodge() {
   if (!storyRun) return;
@@ -4076,6 +4132,7 @@ function endStoryDodge(win) {
 function finishRound(win, reason) {
   const n = pendingRound, c = CHP();
   state = 'story'; mini = null;
+  showPad(null);
   A.stopMusic();
   const from = c.ranks[story.rank];
   if (win) story.rank = Math.min(c.ranks.length - 1, story.rank + 1);
@@ -4370,16 +4427,30 @@ window.addEventListener('keyup', e => {
 });
 window.addEventListener('blur', () => { keys.left = keys.right = keys.fire = false; });
 
+const dragMode = () => state === 'play' || (state === 'mini' && mini && mini.def.drag);
+function dragStart(clientX) {
+  const x0 = state === 'play' ? player.x : mini.m.x;
+  drag.sx = clientX; drag.px = x0; drag.target = x0;
+}
+function dragMove(clientX) {
+  if (drag.target === null) return;
+  drag.target = clamp(7, LW - 7, drag.px + (clientX - drag.sx) / S * 1.25);
+}
+function dragEnd() { drag.target = null; }
 function updateTouches(e) {
   if (state !== 'play' && state !== 'mini') return;
   e.preventDefault();
   const r = canvas.getBoundingClientRect();
   if (e.type === 'touchstart') for (const t of e.changedTouches) {
-    if (state === 'mini') miniPress(t.clientX - r.left < r.width / 2 ? -1 : 1); else mash();
+    if (state === 'mini' && !mini.def.drag) miniPress(t.clientX - r.left < r.width / 2 ? -1 : 1);
+    else mash();
   }
   touch.left = touch.right = false;
-  for (const t of e.touches) {
-    if (t.clientX - r.left < r.width / 2) touch.left = true; else touch.right = true;
+  if (!dragMode()) return;
+  if (e.type === 'touchstart' && e.touches.length === 1) dragStart(e.touches[0].clientX);
+  else if (e.type === 'touchmove' && e.touches.length) dragMove(e.touches[0].clientX);
+  else if (e.type === 'touchend' || e.type === 'touchcancel') {
+    if (e.touches.length) dragStart(e.touches[0].clientX); else dragEnd();
   }
 }
 for (const ev of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) canvas.addEventListener(ev, updateTouches, { passive: false });
@@ -4411,11 +4482,20 @@ $('edToGift').addEventListener('click', () => $('edPager').pager.go(1, true));
 $('edToNext').addEventListener('click', () => $('edPager').pager.go(2, true));
 $('edRetry').addEventListener('click', () => { A.play('click'); storyStart(story.ch, false); });
 $('edMenu').addEventListener('click', () => { A.play('click'); openStoryHome(); });
+let mouseDrag = false;
 canvas.addEventListener('mousedown', e => {
-  if (state !== 'mini') return;
-  const r = canvas.getBoundingClientRect();
-  miniPress(e.clientX - r.left < r.width / 2 ? -1 : 1);
+  if (state === 'mini' && !mini.def.drag) {
+    const r = canvas.getBoundingClientRect();
+    miniPress(e.clientX - r.left < r.width / 2 ? -1 : 1);
+  } else if (dragMode()) { mouseDrag = true; dragStart(e.clientX); }
 });
+window.addEventListener('mousemove', e => { if (mouseDrag) dragMove(e.clientX); });
+window.addEventListener('mouseup', () => { if (mouseDrag) { mouseDrag = false; dragEnd(); } });
+
+for (const [id, dir] of [['padL', -1], ['padR', 1]]) {
+  $(id).addEventListener('pointerdown', e => { e.preventDefault(); A.init(); miniPress(dir); });
+  $(id).addEventListener('contextmenu', e => e.preventDefault());
+}
 
 // ================= 업데이트 안내 =================
 const NOTICE_VER = '2.0.1';
